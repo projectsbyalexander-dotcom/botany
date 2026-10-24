@@ -231,6 +231,14 @@
     ...BLENDS.map((b) => ({ key: "blend:" + b.id, title: b.ru, meta: "Сбор из учебника", ing: b.items, method: b.items.some((id) => GROUP[byId[id].prep] === "dec") ? "dec" : "inf", legacy: false })),
     ...legacyAll().map((m) => ({ key: "legacy:" + m.id, title: m.ru, meta: legacyMeta(m), ing: PX.legacy[m.id].ing, method: legacyMethod(m) === "water" ? "mix" : legacyMethod(m), legacy: true, id: m.id })),
   ];
+  // Любой рецепт книги по ключу: сбор, старинный рецепт или простое средство по показанию (все травы этого показания, до восьми)
+  function goalFor(key) {
+    const g = GOALS().find((x) => x.key === key); if (g) return g;
+    const r = allRecipes()[key]; if (!r) return null;
+    return { key, title: `${POT_METHODS.find((x) => x.id === r.method).ru}: ${lc1(diseaseIndex[r.cond].ru)}`, meta: "Простое средство по показанию", ing: [...r.herbs].slice(0, SLOTS), method: r.method, legacy: false };
+  }
+  const allKeys = () => [...GOALS().map((g) => g.key), ...Object.keys(allRecipes())];
+  let lastRandom = null;
   function goalsHtml() {
     const gs = GOALS(), done = gs.filter((g) => ps.book[g.key]).length;
     const card = (g) => { const d = ps.book[g.key], meth = POT_METHODS.find((x) => x.id === g.method);
@@ -243,7 +251,7 @@
       <h3 class="cp-group">${legacyMark()} Старинные рецепты</h3>${gs.filter((g) => g.legacy).map(card).join("")}`;
   }
 
-  C.page("pot", function potPage() {
+  C.page("pot", function potPage(load) {
     const slots = ps.slots;
     let q = "", lastResult = null, part = "", tag = "", shelf = store.get("potShelf", "herbs");
     if (!["herbs", "extras", "goals", "methods", "theory"].includes(shelf)) shelf = "herbs";
@@ -259,7 +267,7 @@
           <div class="cp-proc">
             <button class="cp-chip ${ps.grind ? "on" : ""}" id="grind" type="button" aria-pressed="${ps.grind}">Измельчить</button>
             <span id="methods">${POT_METHODS.map((m) => `<button class="cp-chip ${m.old ? "old" : ""} ${ps.method === m.id ? "on" : ""}" data-m="${m.id}" type="button" title="${m.desc}">${m.ru}</button>`).join("")}</span>
-            <button class="cp-chip" id="rand" type="button">Случайно</button>
+            <button class="cp-chip" id="rand" type="button" title="Положить в котелок случайный рецепт и подсветить нужную обработку">Случайный рецепт</button>
             <button class="cp-chip" id="clear" type="button">Очистить</button>
           </div>
         </div>
@@ -311,11 +319,11 @@
       $("#shelfhint").innerHTML = { goals: "Что можно повторить в котелке: сборы из учебника и старинные рецепты из «Наследия». Состав скрыт; если не получается, загрузите его в котелок.", herbs: "Травы справочника. Перетащите карточку в котелок или нажмите на неё.", extras: "Ингредиенты старинных рецептов, которых нет среди трав справочника: европейские травы, вино, мёд, желчь, яды и привозное сырьё, которое закупали аптеки (корица, гвоздика, гваяковое дерево). Нажмите, чтобы положить в котелок.", methods: "Способы обработки. Первые три готовят водные извлечения по учебнику, остальные встречаются в старинных рецептах.", theory: "Теория из курса провизора: как готовят то, что лежит в котелке, и карточки для заучивания рецептов." }[shelf] + ` <a href="#/book">Книга рецептов</a>`;
       let html = "";
       if (shelf === "herbs") {
-        const list = PLANTS.filter(inCountries).filter((p) => !p.potx && hit([p.ru, p.lat, p.drug.ru, p.drug.lat, p.compounds]) && (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!tag || tagsOf(p).includes(tag)));
+        const list = PLANTS.filter(inCountries).filter((p) => !p.potx && hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!tag || tagsOf(p).includes(tag)));
         html = list.map((p) => row(p.id, p.drug.ru, p.drug.lat, tagsOf(p).slice(0, 3).map((t) => `<span class="tag" style="--tc:${C.TAG_COLORS[t] || "#555"}">${t}</span>`).join(""))).join("");
       } else if (shelf === "extras") {
         html = Object.entries(XGROUPS).map(([g, gt]) => {
-          const xs = PX.extras.filter((x) => x.group === g && hit([x.ru, x.lat, gt]));
+          const xs = PX.extras.filter((x) => x.group === g && hit([C.ml(x.ru, gt), x.lat]));
           return xs.length ? `<h3 class="cp-group">${gt}</h3>${xs.map((x) => row(x.id, x.ru, x.lat, x.n ? `<span class="muted" style="font-size:.8rem">в ${x.n} рец.</span>` : "")).join("")}` : "";
         }).join("");
       } else if (shelf === "goals") {
@@ -361,15 +369,16 @@
       pickMethod(b.dataset.m); if (shelf === "methods") draw(); else preview();
     });
     const pickMethod = (id) => { ps.method = id; lastResult = null; $$("#methods .cp-chip").forEach((c) => { c.classList.toggle("on", c.dataset.m === id); c.classList.remove("glow"); }); };
-    const showAnswer = (key) => {
-      const g = GOALS().find((x) => x.key === key); if (!g) return;
+    // label: «Ответ» (подсказка после неудачи), «Рецепт» (кнопка «Сварить в котелке» в книге и «Наследии»), «Случайный рецепт»
+    const showAnswer = (key, label = "Ответ") => {
+      const g = goalFor(key); if (!g) return;
       slots.fill(null); g.ing.forEach((id, i) => (slots[i] = id));
       pickMethod(g.method);
       ps.grind = true; $("#grind").classList.add("on"); $("#grind").setAttribute("aria-pressed", "true");
       const chip = $(`#methods [data-m="${g.method}"]`); chip.classList.add("glow");
       // на телефоне ряд обработок прокручивается вбок: показываем подсвеченную
       const proc = $(".cp-proc"); proc.scrollLeft = Math.max(0, chip.offsetLeft - (proc.clientWidth - chip.offsetWidth) / 2);
-      $("#result").innerHTML = `<div class="card near-box"><b>Ответ: ${g.legacy ? legacyMark(true) : ""}${esc(g.title)}</b> <span class="meta-line">${g.meta}</span>. Состав уже в котелке, обработка «${esc(POT_METHODS.find((x) => x.id === g.method).ru)}» подсвечена. Нажмите «Приготовить».</div>`;
+      $("#result").innerHTML = `<div class="card near-box"><b>${label}: ${g.legacy ? legacyMark(true) : ""}${esc(g.title)}</b> <span class="meta-line">${g.meta}</span>. Состав уже в котелке, обработка «${esc(POT_METHODS.find((x) => x.id === g.method).ru)}» подсвечена. Нажмите «Приготовить».</div>`;
       draw();
       // наверх, к котелку; на низком экране так, чтобы подсвеченная обработка была видна
       window.scrollTo(0, 0);
@@ -379,7 +388,7 @@
     $("#result").addEventListener("click", (e) => { const b = e.target.closest("[data-answer]"); if (b) showAnswer(b.dataset.answer); });
     $("#list").addEventListener("click", (e) => {
       const pm = e.target.closest("[data-pick]"); if (pm) { pickMethod(pm.dataset.pick); draw(); return; }
-      const ld = e.target.closest("[data-load]"); if (ld) { const g = GOALS().find((x) => x.key === ld.dataset.load); slots.fill(null); g.ing.forEach((id, i) => (slots[i] = id)); pickMethod(g.method); lastResult = null; $("#result").innerHTML = ""; draw(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+      const ld = e.target.closest("[data-load]"); if (ld) { showAnswer(ld.dataset.load, "Рецепт"); return; }
       const sh = e.target.closest("[data-show]"); if (sh) { const box = sh.parentElement.querySelector(".cp-goal-ing"); box.hidden = !box.hidden; sh.textContent = box.hidden ? "Показать состав" : "Скрыть состав"; return; }
       const it = e.target.closest("button.cp-row"); if (!it || slots.includes(it.dataset.id) || dragJustEnded) return;
       put(it.dataset.id);
@@ -391,14 +400,13 @@
     const proc = $(".cp-proc"), procEnd = () => proc.classList.toggle("at-end", proc.scrollLeft + proc.clientWidth >= proc.scrollWidth - 4);
     proc.addEventListener("scroll", procEnd, { passive: true }); procEnd();
     $("#clear").onclick = () => { slots.fill(null); lastResult = null; $("#result").innerHTML = ""; draw(); };
+    // Случайный рецепт из книги: сначала ещё не сваренные, и не тот же, что в прошлый раз
     $("#rand").onclick = () => {
-      // травы одной группы (настой, отвар или слизь), чтобы обработка подходила всем
-      const n = 2 + Math.floor(Math.random() * 3), g = C.shuffle(["inf", "inf", "dec"])[0];
-      slots.fill(null);
-      C.shuffle(PLANTS.filter(inCountries).filter((p) => GROUP[p.prep] === g)).slice(0, n).forEach((p, i) => (slots[i] = p.id));
-      pickMethod(g);
-      lastResult = null; $("#result").innerHTML = ""; draw();
+      const keys = allKeys().filter((k) => k !== lastRandom), fresh = keys.filter((k) => !ps.book[k]);
+      lastRandom = C.shuffle(fresh.length ? fresh : keys)[0];
+      showAnswer(lastRandom, "Случайный рецепт");
     };
+    if (load && goalFor(load)) { history.replaceState(null, "", "#/pot"); showAnswer(load, "Рецепт"); }
     const cookNow = () => {
       const chosen = slots.filter(Boolean);
       if (!chosen.length) return toast("Котелок пуст.");
@@ -474,7 +482,7 @@
         ${C.hist ? C.hist.block(key, { title: "История и первое описание" }) : ""}
         <h2>Как готовят</h2><ol class="rcp-steps">${b.steps.map((x) => `<li>${stepText(x.a, x.on)}</li>`).join("")}</ol>
         <p class="hint">${STORAGE.t} ${cite(STORAGE.s)}</p>
-        <div class="btn-row"><a class="btn" href="#/sim/free/blend:${b.id}">${ICON("flask")} Приготовить в симуляторе</a><a class="btn ghost" href="#/pot">Сварить в котелке</a></div>
+        <div class="btn-row"><a class="btn" href="#/sim/free/blend:${b.id}">${ICON("flask")} Приготовить в симуляторе</a><a class="btn ghost" href="#/pot/blend:${b.id}">${ICON("pot")} Сварить в котелке</a></div>
         <h2>Компоненты</h2>${herbs.map((p) => herbBlock(p, { inBlend: true })).join("")}
         ${lessonsFor(b.items)}</article>`;
       return;
@@ -506,7 +514,7 @@
       ${herbs.length === 1 && C.hist ? C.hist.block("drug:" + herbs[0].id, { title: "История сырья и первое описание" }) : ""}
       <h2>Сырьё</h2>${herbs.map((p) => herbBlock(p, { cond: r.cond, noHist: herbs.length === 1 })).join("")}
       ${lessonsFor([...r.herbs])}
-      <div class="btn-row"><a class="btn ghost" href="#/pot">Сварить в котелке</a></div></article>`;
+      <div class="btn-row"><a class="btn ghost" href="#/pot/${encodeURIComponent(key)}">${ICON("pot")} Сварить в котелке</a></div></article>`;
   }
 
   // Для версии разработчика: все рецепты книги как сваренные
@@ -533,7 +541,7 @@
         <p class="muted" style="margin:.2em 0">${b.goal}</p>
         <div class="herbs">${b.items.map((id) => `<a class="chip" href="#/plant/${id}">${byId[id].ru}</a>`).join("")}</div>
         <p class="prose" style="font-size:.92rem">${b.why} ${cite(b.src)}</p>
-        <div class="btn-row"><a class="btn small ghost" href="#/sim/free/blend:${b.id}">${ICON("flask")} Приготовить в симуляторе</a></div></div>`).join("")}
+        <div class="btn-row"><a class="btn small ghost" href="#/sim/free/blend:${b.id}">${ICON("flask")} Приготовить в симуляторе</a><a class="btn small ghost" href="#/pot/blend:${b.id}">${ICON("pot")} Сварить в котелке</a></div></div>`).join("")}
         ${(window.K3?.species || []).map((s, i) => [s, i]).filter(([s]) => s.composition?.length >= 3 && s.composition.every((c) => c.parts && /%/.test(c.parts))).map(([s, i]) => `<div class="card recipe">
           <h3><a class="stretch" href="#/book/k3:${i}">${esc(s.name)}</a></h3><p class="muted" style="margin:.2em 0">${esc(s.use)}</p>
           <div class="formula">${s.composition.map((c) => `<div class="row"><span>${C.fLat(c)}</span><span>${esc(c.parts)}</span></div>`).join("")}</div>

@@ -59,7 +59,7 @@
       ${m.modern?.length ? `<h4>Что показали исследования</h4>${items(m.modern)}` : ""}
       ${m.caution ? `<p class="caution">${esc(m.caution)}</p>` : ""}
       ${m.note ? `<p class="hint">${esc(m.note)}</p>` : ""}
-      ${window.POTX?.legacy?.[m.id]?.ok ? `<p class="hint">Этот состав можно повторить в <a href="#/pot">котелке</a>${window.POTX.legacy[m.id].method === "water" ? "" : `, способ: ${({ mac: "мацерация (настаивание)", ung: "мазь", mix: "сбор (смешение)" })[window.POTX.legacy[m.id].method]}`}.</p>` : ""}
+      ${window.POTX?.legacy?.[m.id]?.ok ? `<p class="hint">Этот состав можно повторить в <a href="#/pot/legacy:${m.id}">котелке</a>${window.POTX.legacy[m.id].method === "water" ? "" : `, способ: ${({ mac: "мацерация (настаивание)", ung: "мазь", mix: "сбор (смешение)" })[window.POTX.legacy[m.id].method]}`}.</p>` : ""}
     </article>`;
   }
   function placeCard(p) {
@@ -113,7 +113,7 @@
       ${m.note ? `<p class="hint">${esc(m.note)}</p>` : ""}
       ${place ? `<p class="hint">Аптека: <a href="#/heritage/${place.id}">${esc(place.name)}</a></p>` : ""}
       ${plants.length ? `<h2>Растения справочника в составе</h2><div class="subs">${plants.map((id) => `<a class="chip" href="#/plant/${id}">${esc(byId[id].ru)}</a>`).join("")}</div>` : ""}
-      ${px?.ok ? `<div class="btn-row"><a class="btn" href="#/pot">${ICON("pot")} Сварить в котелке</a></div>` : ""}
+      ${px?.ok ? `<div class="btn-row"><a class="btn" href="#/pot/legacy:${m.id}">${ICON("pot")} Сварить в котелке</a></div>` : ""}
     </article>`;
   }
 
@@ -152,7 +152,7 @@
       const cs = [...new Set(inTab.map((m) => m.country).filter(Boolean))];
       if (cf && !cs.includes(cf)) cf = "";
       $("#hc").innerHTML = cs.length > 1 ? `<button class="chip ${cf ? "" : "on"}" type="button" data-c="">Все</button>${cs.map((c) => `<button class="chip ${c === cf ? "on" : ""}" type="button" data-c="${c}">${country(c)}</button>`).join("")}` : "";
-      const list = inTab.filter((m) => (!cf || m.country === cf) && (!qq || norm([m.ru, m.lat, m.orig, m.use, m.region, m.edition, m.period, m.date, country(m.country), ...(m.composition || []).map((c) => c.lat + " " + c.ru)].join(" ")).includes(qq)));
+      const list = inTab.filter((m) => (!cf || m.country === cf) && (!qq || norm([C.ml(m.ru), m.lat, m.orig, m.use, m.region, m.edition, m.period, m.date, country(m.country), ...(m.composition || []).map((c) => c.lat + " " + c.ru)].join(" ")).includes(qq)));
       list.sort((a, b) => year(a) - year(b));
       $("#hl").innerHTML = list.map(card).join("") || `<p class="muted">Ничего не нашлось.</p>`;
     };

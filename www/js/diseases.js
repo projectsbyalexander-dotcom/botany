@@ -13,7 +13,7 @@
     if (!q) return null;
     const hit = new Set();
     for (const d of Object.values(diseaseIndex)) {
-      const hay = norm([d.ru, DISEASE_LAT[d.id], DISEASE_ICD[d.id], DISEASE_SYN[d.id]].join(" "));
+      const hay = norm([C.ml(d.ru, DISEASE_SYN[d.id]), DISEASE_LAT[d.id], DISEASE_ICD[d.id]].join(" "));
       if (hay.includes(q)) diseasePath(d.id).forEach((n) => hit.add(n.id));
     }
     return hit;
@@ -37,8 +37,8 @@
   function overview(q) {
     const qq = norm(q.trim());
     if (qq.length >= 2) {
-      const hit = Object.values(diseaseIndex).filter((d) => norm([d.ru, DISEASE_LAT[d.id], DISEASE_ICD[d.id], DISEASE_SYN[d.id]].join(" ")).includes(qq));
-      const pl = PLANTS.filter((p) => norm([p.ru, p.lat, p.drug.ru, p.drug.lat].join(" ")).includes(qq));
+      const hit = Object.values(diseaseIndex).filter((d) => norm([C.ml(d.ru, DISEASE_SYN[d.id]), DISEASE_LAT[d.id], DISEASE_ICD[d.id]].join(" ")).includes(qq));
+      const pl = PLANTS.filter((p) => norm([C.ml(p.ru, p.drug.ru), p.lat, p.drug.lat].join(" ")).includes(qq));
       return `<div class="card"><h4 style="margin-top:0">Состояния</h4>${hit.map((d) => `<a class="res" href="#/diseases/${d.id}">${d.ru} <i class="muted">${DISEASE_LAT[d.id] || ""}</i><small>${DISEASE_ICD[d.id] || ""}</small></a>`).join("") || `<p class="muted">Нет совпадений.</p>`}
         ${pl.length ? `<h4>Растение: при каких состояниях применяют</h4>${pl.map((p) => `<div class="res" style="display:block">${C.nmA(`#/plant/${p.id}`, p.ru, p.lat, { b: true })}<div class="subs">${[...new Set(p.uses.map((u) => u.c))].map((c) => `<a class="chip" href="#/diseases/${c}">${diseaseIndex[c].ru}</a>`).join("")}</div></div>`).join("")}` : ""}</div>`;
     }

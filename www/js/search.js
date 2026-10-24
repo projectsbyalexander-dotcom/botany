@@ -30,6 +30,8 @@
     for (const p of L.places || []) out.push({ type: "place", title: p.name, sub: [p.where, p.years].filter(Boolean).join(" · "), href: `#/heritage/${p.id}`, letter: p.name, names: [p.name, p.where], body: [txt(p.text)] });
     for (const [k, s] of Object.entries(SOURCES)) out.push({ type: "source", title: s.short, sub: s.kind || "", href: "#/sources", letter: s.short, names: [s.short], body: [s.full] });
     if (T) out.forEach((e) => { e.names = [...e.names, ...e.names.filter(Boolean).map(T)]; e.body = e.body.filter(Boolean).map(T); });
+    // названия на всех языках приложения: ромашку находит и «chamomile», и «Kamille», и «rumianek» при любом языке интерфейса
+    out.forEach((e) => { e.names = [...e.names, ...e.names.map((x) => window.I18N_NAMES?.[x])]; });
     out.forEach((e) => { e.n = norm(e.names.filter(Boolean).join(" | ")); e.b = norm(e.body.filter(Boolean).join(" ")); e.raw = e.body.filter(Boolean).join(" "); });
     return out;
   }

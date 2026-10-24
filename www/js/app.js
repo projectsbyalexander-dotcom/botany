@@ -73,7 +73,10 @@
   // ---------- Мелочи интерфейса ----------
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const norm = (s) => String(s || "").toLowerCase().replace(/ё/g, "е");
+  // Для поиска: без регистра и диакритики (ё = е, ü = u, č = c, ł = l)
+  const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/g, "l");
+  // Русское название вместе с переводами на все языки приложения (js/i18n/names.js), чтобы поиск понимал любой язык
+  const ml = (...xs) => xs.filter(Boolean).map((x) => (window.I18N_NAMES?.[x] ? x + " | " + I18N_NAMES[x] : x)).join(" | ");
   function toast(html, ms = 3200) {
     $$(".toast").forEach((t) => t.remove());
     const t = document.createElement("div");
@@ -157,7 +160,7 @@
     ["book", "Рецепты", "book"], ["latin", "Латынь", "scroll"], ["sources", "Источники", "library"], ["pot", "Котелок", "pot"],
   ];
   const TABS = [["plants", "Растения", "leaf"], ["diseases", "Болезни", "cross"], ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["map", "Карта", "map"], ["", "Ещё", "library"]];
-  $("#logo").innerHTML = `${ICON("leaf")} Травник`;
+  $("#logo").innerHTML = `${ICON("leaf")} Этноботаника`;
   $("#srch").innerHTML = ICON("search");
   $("#nav").innerHTML = NAV.map(([h, t]) => `<a href="#/${h}" class="${h === "pot" ? "fun" : ""}">${t}</a>`).join("");
   $("#tabbar").innerHTML = TABS.map(([h, t, i]) => `<a href="#/${h}">${ICON(i)}<span>${t}</span></a>`).join("");
@@ -182,7 +185,7 @@
     app.innerHTML = `
       <div class="hero">
         <div class="hero-art" aria-hidden="true">${["chamomile", "valerian", "stjohns", "linden", "plantain_lanc", "calendula", "yarrow", "bilberry", "sage"].map((id) => ART.draw(byId[id])).join("")}</div>
-        <h1>Травник Старого Света</h1>
+        <h1>Европейская этноботаника и фармакогнозия</h1>
         <p>Фармакогнозия европейской традиции: лекарственные растения Польши, Германии, Словакии и Беларуси. Учебник и быстрый справочник; у каждого утверждения есть источник.</p>
         <div class="stats-line"><span><b>${PLANTS.length}</b>растений</span><span><b>${nLeaves}</b>состояний по МКБ-10</span><span><b>${(window.MECH?.classes || []).length || "—"}</b>классов веществ</span><span><b>${nHist || "—"}</b>исторических рецептов</span><span><b>${Object.keys(SOURCES).length}</b>источников</span></div>
       </div>
@@ -205,8 +208,8 @@
     const render = () => {
       const qq = norm(q.trim());
       const list = PLANTS.filter(inCountries).filter((p) => (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!qq ||
-        norm([p.ru, p.lat, p.drug.ru, p.drug.lat, p.fam, p.compounds, tagsOf(p).join(" ")].join(" ")).includes(qq) ||
-        p.uses.some((u) => norm(diseaseIndex[u.c].ru + " " + (DISEASE_SYN[u.c] || "")).includes(qq))));
+        norm([ml(p.ru, p.drug.ru, p.fam, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds].join(" ")).includes(qq) ||
+        p.uses.some((u) => norm(ml(diseaseIndex[u.c].ru, DISEASE_SYN[u.c])).includes(qq))));
       if (view === "table") {
         $("#plist").className = "";
         $("#plist").innerHTML = list.length ? `<div class="card table-wrap"><table class="htable"><thead><tr><th>Растение</th><th>Сырьё</th><th>Ведущие вещества</th><th>Показания (EMA / учебник)</th><th>Форма</th></tr></thead><tbody>${list.map((p) => {
@@ -227,7 +230,7 @@
     };
     app.innerHTML = `
       <h1>Растения</h1>
-      <p class="lead">Лекарственное растительное сырьё европейской традиции. Поиск по русскому и латинскому названию, веществу или болезни.</p>
+      <p class="lead">Лекарственное растительное сырьё европейской традиции. Поиск по названию на любом языке приложения или по-латыни, по веществу или болезни.</p>
       <div class="toolbar">
         <div class="search-row"><input class="search" id="q" placeholder="Например: Hyperici herba, дубильные, кашель" value="${esc(q)}" autocomplete="off" aria-label="Поиск растений"><div class="seg" id="vw">${[["cards", "Карточки"], ["table", "Таблица"]].map(([k, t]) => `<button type="button" data-v="${k}" class="${view === k ? "on" : ""}">${t}</button>`).join("")}</div></div>
         <div class="chips" id="parts"><button class="chip on" data-part="" type="button">Всё сырьё</button>${[...new Set(Object.values(PARTS))].map((t) => `<button class="chip" data-part="${t}" type="button">${t}</button>`).join("")}</div>
@@ -408,7 +411,7 @@
   syncMusic();
 
   window.CORE = {
-    D, $, $$, app, esc, norm, shuffle, toast, store, state, byId, EV, EV_LONG, diseaseIndex, descendants, diseasePath, plantsFor, inCountries,
+    D, $, $$, app, esc, norm, ml, shuffle, toast, store, state, byId, EV, EV_LONG, diseaseIndex, descendants, diseasePath, plantsFor, inCountries,
     flags, cite, prose, items, countryChips, bindChips, latName, icd, tagsOf, tagPill, TAG_COLORS, photoOf, thumb, PARTS, partsOf, partsText, page, PAGES, heritageFor, legacyMark, CODE,
   };
   document.addEventListener("keydown", (e) => {

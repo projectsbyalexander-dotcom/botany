@@ -110,10 +110,11 @@
   }
 
   // ---------- Раздел словаря ----------
-  const match = (t, q) => !q || norm([t.lat, t.forms, t.ru, ...(t.ex || [])].join(" ")).includes(norm(q));
+  // перевод термина ищется на всех языках приложения
+  const match = (t, q) => !q || norm([t.lat, t.forms, C.ml(t.ru), ...(t.ex || [])].join(" ")).includes(norm(q));
   function listHtml(q, cat, limit) {
     let ts = L.terms.filter((t) => (!cat || t.cat === cat) && match(t, q));
-    const drugs = q ? D.PLANTS.filter((p) => norm([p.drug.lat, p.lat, p.drug.ru, p.ru].join(" ")).includes(norm(q))) : [];
+    const drugs = q ? D.PLANTS.filter((p) => norm([p.drug.lat, p.lat, C.ml(p.drug.ru, p.ru)].join(" ")).includes(norm(q))) : [];
     if (limit) ts = ts.slice(0, limit);
     return `${drugs.slice(0, limit || 99).map((p) => `<div class="lat-entry"><p class="lat-head">${latT(p.drug.lat)} <span class="muted">· ${latT(p.lat)}</span></p><p class="lat-ru"><a href="#/plant/${p.id}">${esc(p.drug.ru)}</a>, ${esc(p.ru.toLowerCase())}</p></div>`).join("")}
       ${limit ? ts.map((t) => entryHtml(t, { cat: !cat })).join("") : Object.keys(CAT).filter((c) => ts.some((t) => t.cat === c)).map((c) => `<h3 class="lat-cat">${CAT[c]} <span class="muted">${ts.filter((t) => t.cat === c).length}</span></h3>${ts.filter((t) => t.cat === c).sort((a, b) => a.lat.localeCompare(b.lat)).map(rowHtml).join("")}`).join("") || (drugs.length ? "" : `<p class="muted">Ничего не найдено.</p>`)}`;

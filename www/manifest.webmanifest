@@ -1,7 +1,7 @@
 {
-  "name": "Травник Старого Света",
-  "short_name": "Травник",
-  "lang": "ru",
+  "name": "European Ethnobotany & Pharmacognosy",
+  "short_name": "Ethnobotany",
+  "lang": "en",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#1b1510",

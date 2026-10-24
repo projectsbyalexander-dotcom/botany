@@ -47,7 +47,7 @@
     for (const [p, re] of tplRe) {
       const m = k.match(re); if (!m) continue;
       const t = get(p); if (t == null) continue;
-      return t.replace(/\{(\d)\}/g, (_, i) => { const x = m[+i + 1] ?? ""; return CY.test(x) ? get(x) ?? viaTpl(x) ?? x : x; });
+      return t.replace(/\{(\d)\}/g, (_, i) => { const x = m[+i + 1] ?? ""; return CY.test(x) && x !== k ? look(x) ?? x : x; });
     }
     return null;
   }
