@@ -8,12 +8,24 @@
   if (L.sources) for (const [k, v] of Object.entries(L.sources)) if (!D.SOURCES[k]) D.SOURCES[k] = v;
 
   // ---------- Режим названий ----------
-  const MODES = { lat: "Латынь", both: "Латынь и русский", ru: "Русский" };
+  const MODES = { lat: "Только латынь", both: "Латынь и язык приложения", ru: "Только язык приложения" };
+  // Что делает каждый вариант: пример на ромашке и одна фраза пояснения
+  const HELP = {
+    lat: "Растения и сырьё подписаны только по-латыни, как в аптеке и в рецептах. Названия на языке приложения скрыты.",
+    both: "Рядом с названием на языке приложения стоит латинское: удобно, пока латынь учится.",
+    ru: "Растения и сырьё подписаны только на языке приложения. Латынь скрыта, но остаётся в латинском словаре и в поиске.",
+  };
+  const exampleHtml = (m) => {
+    const p = byId.chamomile; if (!p) return "";
+    const ru = `<b>${esc(p.drug.ru)}</b>`, lat = `<i>${esc(p.drug.lat)}</i>`;
+    return m === "lat" ? lat : m === "ru" ? ru : `${ru} ${lat}`;
+  };
+  const helpHtml = () => `<dl class="nm-help">${Object.entries(MODES).map(([k, t]) => `<div class="nm-help-row ${k === mode ? "on" : ""}" data-nm-row="${k}"><dt>${t}</dt><dd><span class="nm-ex">${exampleHtml(k)}</span><span>${HELP[k]}</span></dd></div>`).join("")}</dl>`;
   let mode = store.get("names", "both");
   if (!MODES[mode]) mode = "both";
   const applyMode = () => { const r = document.documentElement; r.classList.remove("names-lat", "names-ru", "names-both"); r.classList.add("names-" + mode); };
   applyMode();
-  const setMode = (m) => { if (!MODES[m]) return; mode = m; store.set("names", m); applyMode(); $$(".nm-switch button").forEach((b) => b.classList.toggle("on", b.dataset.nm === m)); $$("select.nm-aware").forEach((s) => s.dispatchEvent(new Event("nm"))); };
+  const setMode = (m) => { if (!MODES[m]) return; mode = m; store.set("names", m); applyMode(); $$(".nm-switch button").forEach((b) => b.classList.toggle("on", b.dataset.nm === m)); $$("[data-nm-row]").forEach((r) => r.classList.toggle("on", r.dataset.nmRow === m)); $$(".nm-now").forEach((x) => (x.textContent = HELP[m])); $$("select.nm-aware").forEach((s) => s.dispatchEvent(new Event("nm"))); };
   const switchHtml = () => `<div class="nm-switch" role="group" aria-label="Как показывать названия">${Object.entries(MODES).map(([k, t]) => `<button type="button" class="chip ${k === mode ? "on" : ""}" data-nm="${k}">${t}</button>`).join("")}</div>`;
   document.addEventListener("click", (e) => { const b = e.target.closest(".nm-switch [data-nm]"); if (b) setMode(b.dataset.nm); });
 
@@ -89,7 +101,7 @@
     pop.innerHTML = `<div class="lat-box" role="dialog" aria-modal="true" aria-label="Латинский словарь">
       <div class="lat-bar"><b>${title || "Латинский словарь"}</b><button type="button" class="iconbtn lat-x" aria-label="Закрыть">×</button></div>
       <div class="lat-body">${html}</div>
-      <div class="lat-foot">${switchHtml()}<a class="btn ghost small" href="#/latin">Весь словарь</a></div></div>`;
+      <div class="lat-foot"><div class="lat-foot-nm"><span class="hint">Как подписывать растения и сырьё:</span>${switchHtml()}<span class="hint nm-now">${HELP[mode]}</span></div><a class="btn ghost small" href="#/latin">Весь словарь</a></div></div>`;
     document.body.appendChild(pop);
     pop.addEventListener("click", (e) => { if (e.target === pop || e.target.closest(".lat-x") || e.target.closest("a[href]")) close(); });
     pop.querySelector(".lat-x").focus();
@@ -123,7 +135,9 @@
   C.page("latin", function latinPage(id) {
     app.innerHTML = `<h1>Латинский словарь</h1>
       <p class="lead">Латынь аптечных названий: части растений, лекарственные формы, термины рецептуры, роды и видовые эпитеты. Название сырья строится так: род в родительном падеже и часть растения в именительном (<i>Matricariae flos</i>, цветки ромашки). Любое латинское название в приложении, выделенное пунктиром, открывает карточку словаря.</p>
-      <div class="card"><h4 style="margin-top:0">Как показывать названия растений и сырья</h4>${switchHtml()}<p class="hint">Действует на справочник, страницы растений, болезни, механизмы, котелок и книгу рецептов. В симуляторе язык этикеток задаёт уровень сложности.</p></div>
+      <div class="card"><h4 style="margin-top:0">Как подписывать растения и сырьё</h4>${switchHtml()}${helpHtml()}
+        <p class="hint"><b>Где меняется:</b> названия растений и сырья в справочнике (карточки и таблица), на страницах растений, в болезнях, механизмах, котелке, книге рецептов и «Наследии».</p>
+        <p class="hint"><b>Что не меняется:</b> язык меню, кнопок и текстов (его задаёт кнопка языка в шапке); поиск, который находит растение по любому названию; этикетки в симуляторе провизора, язык которых задаёт уровень сложности.</p></div>
       <input class="search" id="lsq" placeholder="Поиск: folium, отвар, officinalis…" value="${esc(q)}" autocomplete="off" aria-label="Поиск в словаре">
       <div class="chips" id="lcat">${[["", "Все"], ...Object.entries(CAT)].filter(([k]) => !k || L.terms.some((t) => t.cat === k)).map(([k, t]) => `<button class="chip ${k === cat ? "on" : ""}" data-c="${k}" type="button">${t}</button>`).join("")}</div>
       <div id="lres" class="lat-list"></div>

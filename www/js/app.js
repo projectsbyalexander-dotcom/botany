@@ -157,10 +157,10 @@
   const NAV = [
     ["plants", "Растения", "leaf"], ["diseases", "Болезни", "cross"], ["pharm", "Механизмы", "mortar"],
     ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["map", "Карта", "map"],
-    ["book", "Рецепты", "book"], ["latin", "Латынь", "scroll"], ["sources", "Источники", "library"], ["pot", "Котелок", "pot"],
+    ["book", "Рецепты", "book"], ["latin", "Латынь", "scroll"], ["sources", "Источники", "library"], ["notes", "Блокнот", "pen"], ["pot", "Котелок", "pot"],
   ];
   const TABS = [["plants", "Растения", "leaf"], ["diseases", "Болезни", "cross"], ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["map", "Карта", "map"], ["", "Ещё", "library"]];
-  $("#logo").innerHTML = `${ICON("leaf")} Этноботаника`;
+  $("#logo").innerHTML = `${window.ROSE ? ROSE("ico logo-rose") : ICON("leaf")} Ethnobotany`;
   $("#srch").innerHTML = ICON("search");
   $("#nav").innerHTML = NAV.map(([h, t]) => `<a href="#/${h}" class="${h === "pot" ? "fun" : ""}">${t}</a>`).join("");
   $("#tabbar").innerHTML = TABS.map(([h, t, i]) => `<a href="#/${h}">${ICON(i)}<span>${t}</span></a>`).join("");
@@ -180,12 +180,14 @@
       ["catalog", "search", "Каталог", "Алфавитный указатель растений, сырья, болезней и веществ."],
       ["latin", "scroll", "Латинский словарь", "Части растений, лекарственные формы, рецептура, роды и эпитеты; выбор языка названий."],
       ["sources", "library", "Источники", "Монографии EMA, учебник, фармакопеи, статьи."],
+      ["notes", "pen", "Блокнот", "Свои заметки: наблюдения, рецепты, вопросы. Хранятся только на этом устройстве."],
       ["pot", "pot", "Котелок", "Свободная игра: смешай сырьё и узнай, что получилось."],
     ];
     app.innerHTML = `
       <div class="hero">
-        <div class="hero-art" aria-hidden="true">${["chamomile", "valerian", "stjohns", "linden", "plantain_lanc", "calendula", "yarrow", "bilberry", "sage"].map((id) => ART.draw(byId[id])).join("")}</div>
-        <h1>Европейская этноботаника и фармакогнозия</h1>
+        <div class="hero-rose" aria-hidden="true">${window.ROSE ? ROSE("rose") : ""}</div>
+        <h1 data-noi18n>Ethnobotany</h1>
+        <div class="hero-orn" aria-hidden="true"><span></span>✦<span></span></div>
         <p>Фармакогнозия европейской традиции: лекарственные растения Польши, Германии, Словакии и Беларуси. Учебник и быстрый справочник; у каждого утверждения есть источник.</p>
         <div class="stats-line"><span><b>${PLANTS.length}</b>растений</span><span><b>${nLeaves}</b>состояний по МКБ-10</span><span><b>${(window.MECH?.classes || []).length || "—"}</b>классов веществ</span><span><b>${nHist || "—"}</b>исторических рецептов</span><span><b>${Object.keys(SOURCES).length}</b>источников</span></div>
       </div>
@@ -406,9 +408,21 @@
   const mb = $("#music");
   const syncMusic = () => { mb.innerHTML = ICON(MUSIC.playing ? "note" : "mute"); mb.title = MUSIC.playing ? "Выключить музыку" : "Включить музыку"; };
   // Музыка: только включить или выключить; темы идут в случайном порядке (js/music.js)
-  mb.addEventListener("click", () => { if (MUSIC.playing) MUSIC.stop(); else MUSIC.start(); syncMusic(); });
+  mb.addEventListener("click", () => { if (MUSIC.playing) MUSIC.stop(); else MUSIC.start(); store.set("musicOn", MUSIC.playing); syncMusic(); });
   mb.addEventListener("musicsync", syncMusic);
   syncMusic();
+  // Музыка включена по умолчанию. Браузер может запретить звук до первого касания: тогда она начнётся с него
+  // (кроме касания самой кнопки музыки: её нажатие и так включает или выключает звук).
+  if (store.get("musicOn", true)) {
+    MUSIC.start(); setTimeout(syncMusic, 400);
+    const kick = (e) => {
+      if (e.target.closest?.("#music")) return done();
+      if (!MUSIC.playing && store.get("musicOn", true) && !document.hidden) { MUSIC.start(); setTimeout(syncMusic, 400); }
+      done();
+    };
+    const done = () => ["pointerdown", "keydown"].forEach((ev) => document.removeEventListener(ev, kick, true));
+    ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, kick, true));
+  }
 
   window.CORE = {
     D, $, $$, app, esc, norm, ml, shuffle, toast, store, state, byId, EV, EV_LONG, diseaseIndex, descendants, diseasePath, plantsFor, inCountries,

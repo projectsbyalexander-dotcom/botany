@@ -1,6 +1,6 @@
 {
   "appId": "io.github.projectsbyalexander.travnik",
-  "appName": "European Ethnobotany & Pharmacognosy",
+  "appName": "Ethnobotany",
   "webDir": "www",
-  "android": { "backgroundColor": "#1b1510" }
+  "android": { "backgroundColor": "#0e0a0b" }
 }

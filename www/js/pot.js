@@ -20,10 +20,15 @@
   const PX = window.POTX || { extras: [], legacy: {} };
   const EX = Object.fromEntries(PX.extras.map((x) => [x.id, x]));
   const XGROUPS = { liquid: "Жидкости и основы", animal: "Животного происхождения", food: "Пища", herb: "Европейские травы вне справочника", import: "Привозное сырьё старых аптек", mineral: "Соли и минералы", poison: "Исторические яды", vessel: "Посуда" };
+  // Что выйдет из ингредиентов «Другого» (js/potfun.js)
+  const PF = window.POTFUN;
+  if (PF) for (const [k, v] of Object.entries(PF.sources)) if (!D.SOURCES[k]) D.SOURCES[k] = v;
+  const funSrc = (e) => (Array.isArray(e.s) ? e.s : e.s?.note ? EX[e.s.note]?.note?.[e.s.i]?.s : null);
+  const funHtml = (f, bare) => f.items.map((e) => `<div class="fun-box">${bare ? "" : `<b>${e.t}</b>`}<p>${e.d} ${cite(funSrc(e))}</p></div>`).join("");
   const ING = (id) => byId[id] || EX[id];
   const ingName = (id) => ING(id)?.ru || id;
   const XICON = { poison: "warn", vessel: "mortar", liquid: "flask", animal: "scroll", mineral: "scale", food: "jar", import: "jar", herb: "leaf" };
-  const artOf = (id) => byId[id] ? ART.draw(byId[id]) : `<span class="x-art g-${EX[id]?.group}">${ICON(XICON[EX[id]?.group] || "jar", "ico")}</span>`;
+  const artOf = (id) => byId[id] ? ART.draw(byId[id]) : PAGE_OF[id] ? ART.draw(PAGE_OF[id]) : `<span class="x-art g-${EX[id]?.group}">${ICON(XICON[EX[id]?.group] || "jar", "ico")}</span>`;
   const ps = { book: store.get("potBook2", {}), method: "inf", grind: true, slots: Array(SLOTS).fill(null) };
   const officialConds = (p) => {
     const s = new Set();
@@ -82,9 +87,22 @@
   const legacyTitle = (m) => `${esc(m.ru)}${m.lat || m.orig ? ` <i class="muted">${esc(m.lat || m.orig)}</i>` : ""}`;
   const legacyMeta = (m) => esc([m.edition || m.period || m.date, m.region || m.where || m.place].filter(Boolean).join(", "));
 
+  // трава справочника: своя или «Другое» с собственной страницей растения (id котелка вроде x_icemoss)
+  const herbOf = (id) => byId[id] || (PAGE_OF[id]?.uses ? PAGE_OF[id] : null);
   function cook(chosen) {
-    const herbs = chosen.filter((id) => byId[id]).map((id) => byId[id]);
-    const extras = chosen.filter((id) => EX[id]).map((id) => EX[id]);
+    const r = cookBase(chosen);
+    if (r.legacy || !PF) return r;
+    const f = PF.result(chosen, ps.method, (id) => EX[id]?.group, !chosen.some(herbOf));
+    if (!f.items.length) return r;
+    if (!chosen.some(herbOf)) {
+      // в котелке только «Другое»: показываем, что получилось на самом деле
+      return { ...r, kind: "odd", title: f.items.length === 1 ? f.items[0].t : "Что получилось в котелке", cond: null, key: null, body: funHtml(f, f.items.length === 1) + r.body };
+    }
+    return { ...r, body: r.body + `<h4>Что ещё происходит в котелке</h4>` + funHtml(f) };
+  }
+  function cookBase(chosen) {
+    const herbs = chosen.map(herbOf).filter(Boolean);
+    const extras = chosen.filter((id) => EX[id] && !herbOf(id)).map((id) => EX[id]);
     const method = POT_METHODS.find((m) => m.id === ps.method);
     const blend = extras.length ? null : blendOf(chosen);
     const leg = legacyMatch(chosen);
@@ -110,7 +128,7 @@
     const whyMethod = (p) => { const m = METHODS[p.prep]; return `<p class="use text"><b>${p.drug.ru}</b> готовят как «${m.ru}» (<i>${m.lat}</i>). ${m.why} ${cite(m.src)}</p>`; };
     const tags = {}; herbs.forEach((p) => tagsOf(p).forEach((t) => (tags[t] = (tags[t] || 0) + 1)));
     const mechLine = Object.keys(tags).length ? `<p class="hint">Ведущие вещества смеси: ${Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([t, n]) => tagL(t, n)).join(" ")}</p>` : "";
-    const extrasHtml = extras.length ? `<h4>Необычные ингредиенты</h4>${extras.map(extraNote).join("")}` : "";
+    const extrasHtml = extras.length ? `<h4>Другие ингредиенты</h4>${extras.map(extraNote).join("")}` : "";
     const poison = extras.filter((x) => x.group === "poison");
     const poisonHtml = poison.length ? `<p class="caution"><b>Ядовито.</b> ${poison.map((x) => x.ru).join(", ")}: эти вещества сильнодействующие или токсичные. Рецепт приведён только как история фармации; повторять его нельзя.</p>` : "";
     const legacyHtml = () => {
@@ -147,19 +165,19 @@
         body: `${near}<p>${why}</p>${herbs.map(whyHerb).join("")}${extrasHtml}${mechLine}${legacyHtml()}${cautions}` };
     }
     let body = `<p>По источникам эту смесь можно обосновать при состоянии <a href="#/diseases/${cond}"><b>${lc1(diseaseIndex[cond].ru)}</b></a>${latName(cond)}: так или иначе это показание есть у каждой травы справочника в составе.</p>` + herbs.map(whyHerb).join("") + extrasHtml + mechLine;
-    if (extras.length) body = `<p class="hint">Необычные ингредиенты в обоснование не входят: для них нет монографий EMA и статей учебника о применении в смеси.</p>` + body;
+    if (extras.length) body = `<p class="hint">Ингредиенты с полки «Другое» в обоснование не входят: для них нет монографий EMA и статей учебника о применении в смеси.</p>` + body;
     if (grindBad) body = `<p class="caution">Сырьё не измельчили, и вещества извлеклись хуже. Листья и цветки измельчают примерно до 5 мм, корни и кору до 3 мм, плоды и семена до 0,5 мм; в сборах цветки и плоды не измельчают. ${cite([{ id: "karpuk", loc: "с. 67, 71" }])}</p>` + body;
     body = near + body + legacyHtml() + cautions + `<p class="hint">${STORAGE.t} ${cite(STORAGE.s)}</p>`;
     return { kind: grindBad ? "weak" : "good", title: `${method.ru}: ${lc1(diseaseIndex[cond].ru)}`, lat, cond, key: extras.length ? null : cond + "|" + method.id, body };
   }
 
   function cupArt(kind) {
-    const fill = { good: "#c9a43a", known: "#b9822a", weak: "#b8a77a", spoiled: "#4a2f1d", goop: "#5b5346" }[kind] || "#cfc3a3";
+    const fill = { good: "#c9a43a", known: "#b9822a", weak: "#b8a77a", spoiled: "#4a2f1d", goop: "#5b5346", odd: "#6e2f4f" }[kind] || "#cfc3a3";
     return `<svg viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#wobble-cup)">
       <path d="M22,40 L78,40 L72,82 Q50,92 28,82 Z" fill="#efe4c8" stroke="#2a1f17" stroke-width="4"/>
       <path d="M26,48 L74,48 L70,78 Q50,86 30,78 Z" fill="${fill}"/>
       <path d="M78,50 q16,2 10,16 q-4,8 -14,6" fill="none" stroke="#2a1f17" stroke-width="4"/>
-      ${kind === "goop" || kind === "spoiled" ? '<circle cx="42" cy="60" r="4" fill="#2a1f17"/><circle cx="58" cy="66" r="3" fill="#2a1f17"/>' : ""}
+      ${kind === "goop" || kind === "spoiled" || kind === "odd" ? '<circle cx="42" cy="60" r="4" fill="#2a1f17"/><circle cx="58" cy="66" r="3" fill="#2a1f17"/>' : ""}
     </g></svg>`;
   }
 
@@ -272,7 +290,7 @@
           </div>
         </div>
         <div id="result"></div>
-        <div class="tabs cp-tabs" id="shelf">${[["herbs", "Травы"], ["extras", "Необычное"], ["goals", "Рецепты"], ["methods", "Способы"], ["theory", "Теория"]].map(([k, t]) => `<button type="button" data-s="${k}" class="${k === shelf ? "on" : ""}">${t}</button>`).join("")}</div>
+        <div class="tabs cp-tabs" id="shelf">${[["herbs", "Травы"], ["extras", "Другое"], ["goals", "Рецепты"], ["methods", "Способы"], ["theory", "Теория"]].map(([k, t]) => `<button type="button" data-s="${k}" class="${k === shelf ? "on" : ""}">${t}</button>`).join("")}</div>
         <div class="cp-tools" id="tools">
           <div class="search-row"><input class="search" id="q" placeholder="Найти сырьё" autocomplete="off" aria-label="Найти сырьё"><button class="filter-btn" id="ftog" type="button" aria-expanded="false">${ICON("filter")} Фильтры</button></div>
           <div id="filters" hidden>
@@ -291,7 +309,7 @@
       let icon = ART.pot(), title, stats;
       if (lastResult) {
         icon = cupArt(lastResult.kind); title = lastResult.title;
-        stats = [["Итог", { good: "обосновано", known: "известный рецепт", weak: "неполное извлечение (слабое)", spoiled: "нарушена технология (испорчено)", goop: "нет обоснования (не лекарство)" }[lastResult.kind]], ["Форма", method.lat]];
+        stats = [["Итог", { good: "обосновано", known: "известный рецепт", weak: "неполное извлечение (слабое)", spoiled: "нарушена технология (испорчено)", goop: "нет обоснования (не лекарство)", odd: "странный результат (не лекарство)" }[lastResult.kind]], ["Форма", method.lat]];
       } else if (!chosen.length) {
         title = "Добавьте сырьё"; stats = [["Форма", method.lat], ["Режим", method.desc]];
       } else {
@@ -319,11 +337,11 @@
       $("#shelfhint").innerHTML = { goals: "Что можно повторить в котелке: сборы из учебника и старинные рецепты из «Наследия». Состав скрыт; если не получается, загрузите его в котелок.", herbs: "Травы справочника. Перетащите карточку в котелок или нажмите на неё.", extras: "Ингредиенты старинных рецептов, которых нет среди трав справочника: европейские травы, вино, мёд, желчь, яды и привозное сырьё, которое закупали аптеки (корица, гвоздика, гваяковое дерево). Нажмите, чтобы положить в котелок.", methods: "Способы обработки. Первые три готовят водные извлечения по учебнику, остальные встречаются в старинных рецептах.", theory: "Теория из курса провизора: как готовят то, что лежит в котелке, и карточки для заучивания рецептов." }[shelf] + ` <a href="#/book">Книга рецептов</a>`;
       let html = "";
       if (shelf === "herbs") {
-        const list = PLANTS.filter(inCountries).filter((p) => !p.potx && hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!tag || tagsOf(p).includes(tag)));
-        html = list.map((p) => row(p.id, p.drug.ru, p.drug.lat, tagsOf(p).slice(0, 3).map((t) => `<span class="tag" style="--tc:${C.TAG_COLORS[t] || "#555"}">${t}</span>`).join(""))).join("");
+        const list = PLANTS.filter(inCountries).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!tag || tagsOf(p).includes(tag)));
+        html = list.map((p) => row(p.potx || p.id, p.drug.ru, p.drug.lat, tagsOf(p).slice(0, 3).map((t) => `<span class="tag" style="--tc:${C.TAG_COLORS[t] || "#555"}">${t}</span>`).join(""))).join("");
       } else if (shelf === "extras") {
         html = Object.entries(XGROUPS).map(([g, gt]) => {
-          const xs = PX.extras.filter((x) => x.group === g && hit([C.ml(x.ru, gt), x.lat]));
+          const xs = PX.extras.filter((x) => x.group === g && !PAGE_OF[x.id] && hit([C.ml(x.ru, gt), x.lat]));
           return xs.length ? `<h3 class="cp-group">${gt}</h3>${xs.map((x) => row(x.id, x.ru, x.lat, x.n ? `<span class="muted" style="font-size:.8rem">в ${x.n} рец.</span>` : "")).join("")}` : "";
         }).join("");
       } else if (shelf === "goals") {
@@ -385,7 +403,11 @@
       const pb = $(".cp-proc").getBoundingClientRect().bottom;
       if (pb > innerHeight) window.scrollTo({ top: pb - innerHeight + 16, behavior: "smooth" });
     };
-    $("#result").addEventListener("click", (e) => { const b = e.target.closest("[data-answer]"); if (b) showAnswer(b.dataset.answer); });
+    $("#result").addEventListener("click", (e) => {
+      // крестик скрывает только это описание; рецепт остаётся в книге, состав в котелке
+      if (e.target.closest(".cp-res-x")) { $("#result").innerHTML = ""; const t = $("#shelf"); window.scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + scrollY - ($(".cp-band") && getComputedStyle($(".cp-band")).position === "sticky" ? $(".cp-band").offsetHeight : 0) - 12), behavior: "smooth" }); return; }
+      const b = e.target.closest("[data-answer]"); if (b) showAnswer(b.dataset.answer);
+    });
     $("#list").addEventListener("click", (e) => {
       const pm = e.target.closest("[data-pick]"); if (pm) { pickMethod(pm.dataset.pick); draw(); return; }
       const ld = e.target.closest("[data-load]"); if (ld) { showAnswer(ld.dataset.load, "Рецепт"); return; }
@@ -423,8 +445,8 @@
           keys.forEach((k) => (ps.book[k] = { title: r.title, herbs: chosen, method: ps.method, t: Date.now() }));
           store.set("potBook2", ps.book);
         } else if (r.kind === "weak" && r.key && !ps.book[r.key]) extra = `<p class="hint">В книгу записывается только средство, приготовленное правильно.</p>`;
-        $("#result").innerHTML = `<div class="card">
-          <p class="verdict">${{ good: "Обоснованная смесь", known: "Известный рецепт", weak: "Неполное извлечение (слабое средство)", spoiled: "Нарушена технология (испорчено)", goop: "Нет обоснования (не лекарство)" }[r.kind]}</p>
+        $("#result").innerHTML = `<div class="card cp-res"><button class="iconbtn cp-res-x" type="button" title="Скрыть описание" aria-label="Скрыть описание">×</button>
+          <p class="verdict">${{ good: "Обоснованная смесь", known: "Известный рецепт", weak: "Неполное извлечение (слабое средство)", spoiled: "Нарушена технология (испорчено)", goop: "Нет обоснования (не лекарство)", odd: "Что получилось на самом деле" }[r.kind]}</p>
           <h2 style="margin-top:.1em">${r.legacy ? legacyMark() : ""}${r.title}</h2>${r.lat ? `<div class="muted"><i>${r.lat}</i></div>` : ""}
           ${r.cond ? `<p class="meta-line">Показание: ${diseasePath(r.cond).map((n) => n.ru).join(" / ")} ${C.icd(r.cond)}</p>` : ""}
           ${extra}${r.body}${learnHtml(chosen, ps.method)}</div>`;

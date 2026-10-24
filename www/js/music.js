@@ -149,7 +149,17 @@ window.MUSIC = (function () {
     if (kind === "bad") [50, 49, 48].forEach((n, i) => bassoon(n, t + i * 0.18, 0.22));
     if (kind === "bubble") for (let i = 0; i < 6; i++) pizz(60 + Math.floor(Math.random() * 14), t + i * 0.12);
   }
+  // Свернули приложение или ушли со страницы: музыка замолкает и возвращается, когда приложение снова на экране
+  let resume = false;
+  const sync = () => document.getElementById("music")?.dispatchEvent(new Event("musicsync"));
+  const away = () => { if (playing) { resume = true; stop(); sync(); } };
+  const back = () => { if (resume && !document.hidden) { resume = false; start(); sync(); } };
+  document.addEventListener("visibilitychange", () => (document.hidden ? away() : back()));
+  window.addEventListener("pagehide", away);
+  window.addEventListener("pageshow", back);
+  // Android (Capacitor): приложение ушло в фон
+  try { window.Capacitor?.Plugins?.App?.addListener?.("appStateChange", (st) => (st.isActive ? back() : away())); } catch (e) {}
   // версия разработчика: включить конкретную тему
   function play(id) { if (!TRACKS[id]) return; stop(); if (!audio) start(), stop(); load(id); start(); }
-  return { start, stop, play, next: () => { if (!audio) return start(); stop(); load(pick(false)); start(); }, sfx, TRACKS, get track() { return track; }, get playing() { return playing; } };
+  return { start, stop, play, away, back, next: () => { if (!audio) return start(); stop(); load(pick(false)); start(); }, sfx, TRACKS, get track() { return track; }, get playing() { return playing; } };
 })();

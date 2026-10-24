@@ -3,27 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Европейская этноботаника и фармакогнозия</title>
+  <title>Ethnobotany</title>
   <meta name="description" content="Европейская фармакогнозия: растения Польши, Германии, Словакии и Беларуси, болезни по МКБ-10, старинные сборы, карта находок, симулятор провизора. Каждое утверждение с источником.">
-  <meta name="theme-color" content="#17120d">
+  <meta name="theme-color" content="#0e0a0b">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Ethnobotany">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <script>try { const t = localStorage.getItem("travnik.theme"); if (t) document.documentElement.dataset.theme = JSON.parse(t); } catch (e) {}</script>
   <script src="js/i18n.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=PT+Mono&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=PT+Mono&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap">
-      <a class="logo" href="#/" id="logo">Этноботаника</a>
+      <a class="logo" href="#/" id="logo" data-noi18n>Ethnobotany</a>
       <nav class="main" id="nav" aria-label="Разделы"></nav>
       <div class="hdr-tools">
         <a class="iconbtn" id="srch" href="#/search" title="Поиск" aria-label="Поиск"></a>
@@ -47,15 +47,18 @@
   <script src="js/plants2.js"></script>
   <script src="js/potextra.js"></script>
   <script src="js/ethno.js"></script>
+  <script src="js/ethno_de.js"></script>
   <script src="js/plants3.js"></script>
   <script src="js/plants4.js"></script>
   <script src="js/plants5.js"></script>
   <script src="js/plants6.js"></script>
   <script src="js/plants7.js"></script>
   <script src="js/plants8.js"></script>
+  <script src="js/plants9.js"></script>
   <script src="js/parts.js"></script>
   <script src="js/inat2.js"></script>
   <script src="js/inat3.js"></script>
+  <script src="js/inat4.js"></script>
   <script src="js/art.js"></script>
   <script src="js/music.js"></script>
   <script src="js/icons.js"></script>
@@ -75,8 +78,10 @@
   <script src="js/simdata.js"></script>
   <script src="js/simmodes.js"></script>
   <script src="js/flash.js"></script>
+  <script src="js/potfun.js"></script>
   <script src="js/pot.js"></script>
   <script src="js/search.js"></script>
+  <script src="js/notes.js"></script>
   <script src="js/dev.js"></script>
 </body>
 </html>

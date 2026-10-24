@@ -130,7 +130,7 @@
     app.innerHTML = `
       <h1>Наследие</h1>
       <p class="lead">Старинные европейские прописи и смеси: что в них входило, от чего их применяли и что о них известно сегодня. Это история фармации, а не рекомендации к лечению; составы приведены по источникам.</p>
-      <div class="tabs" id="ht">${TABS.map(([k, t]) => `<button type="button" data-t="${k}" class="${k === tab ? "on" : ""}">${t} <span class="muted">${counts[k] || ""}</span></button>`).join("")}</div>
+      <div class="tabs tabs-strong" id="ht">${TABS.map(([k, t]) => `<button type="button" data-t="${k}" class="${k === tab ? "on" : ""}">${t} <span class="muted">${counts[k] || ""}</span></button>`).join("")}</div>
       <input class="search" id="hq" placeholder="Название, растение, страна, век" autocomplete="off" aria-label="Поиск в наследии">
       <div class="chips" id="htr" role="group" aria-label="Традиция">${[["", "Любая традиция"], ["written", TRAD.written], ["oral", TRAD.oral]].map(([k, t]) => `<button class="chip ${k === tf ? "on" : ""}" type="button" data-tr="${k}" title="${k === "written" ? "Фармакопеи, травники, рукописные лечебники" : k === "oral" ? "Записано от людей этнографами и в полевых исследованиях" : ""}">${t}</button>`).join("")}</div>
       <div class="chips" id="hc"></div>
@@ -154,7 +154,7 @@
       $("#hc").innerHTML = cs.length > 1 ? `<button class="chip ${cf ? "" : "on"}" type="button" data-c="">Все</button>${cs.map((c) => `<button class="chip ${c === cf ? "on" : ""}" type="button" data-c="${c}">${country(c)}</button>`).join("")}` : "";
       const list = inTab.filter((m) => (!cf || m.country === cf) && (!qq || norm([C.ml(m.ru), m.lat, m.orig, m.use, m.region, m.edition, m.period, m.date, country(m.country), ...(m.composition || []).map((c) => c.lat + " " + c.ru)].join(" ")).includes(qq)));
       list.sort((a, b) => year(a) - year(b));
-      $("#hl").innerHTML = list.map(card).join("") || `<p class="muted">Ничего не нашлось.</p>`;
+      $("#hl").innerHTML = list.map(card).join("") || (tf && !inTab.length ? `<p class="muted">В этой вкладке нет записей выбранной традиции. <button class="btn small ghost" type="button" data-tr-reset>Любая традиция</button></p>` : `<p class="muted">Ничего не нашлось.</p>`);
     };
     render();
     $("#ht").addEventListener("click", (e) => {
@@ -162,6 +162,7 @@
       tab = b.dataset.t; store.set("herTab", tab); $$("#ht button").forEach((x) => x.classList.toggle("on", x === b)); render();
     });
     $("#htr").addEventListener("click", (e) => { const b = e.target.closest("[data-tr]"); if (!b) return; tf = b.dataset.tr; store.set("herTrad", tf); $$("#htr .chip").forEach((x) => x.classList.toggle("on", x === b)); render(); });
+    $("#hl").addEventListener("click", (e) => { if (e.target.closest("[data-tr-reset]")) $('#htr [data-tr=""]').click(); });
     $("#hc").addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (!b) return; cf = b.dataset.c; render(); });
     $("#hq").addEventListener("input", (e) => { q = e.target.value; render(); });
   });
