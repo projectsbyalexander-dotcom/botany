@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Травник Старого Света</title>
+  <meta name="description" content="Европейская фармакогнозия: растения Польши, Германии, Словакии и Беларуси, болезни по МКБ-10, старинные сборы, карта находок, симулятор провизора. Каждое утверждение с источником.">
+  <meta name="theme-color" content="#17120d">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Травник">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <script>try { const t = localStorage.getItem("travnik.theme"); if (t) document.documentElement.dataset.theme = JSON.parse(t); } catch (e) {}</script>
+  <script src="js/i18n.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=PT+Mono&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" href="#/" id="logo">Травник</a>
+      <nav class="main" id="nav" aria-label="Разделы"></nav>
+      <div class="hdr-tools">
+        <a class="iconbtn" id="srch" href="#/search" title="Поиск" aria-label="Поиск"></a>
+        <button class="iconbtn lat-btn" id="latbtn" type="button" title="Латинский словарь" aria-label="Латинский словарь">Lat</button>
+        <button class="iconbtn" id="theme" type="button" title="Сменить тему" aria-label="Сменить тему"></button>
+        <button class="iconbtn" id="music" type="button" title="Музыка" aria-label="Музыка"></button>
+      </div>
+    </div>
+  </header>
+  <main class="wrap" id="app"></main>
+  <nav class="tabbar" id="tabbar" aria-label="Разделы"></nav>
+  <script src="js/data.js"></script>
+  <script src="js/texts.js"></script>
+  <script src="js/inat.js"></script>
+  <script src="js/karpuk3.js"></script>
+  <script src="js/legacy.js"></script>
+  <script src="js/mapdata.js"></script>
+  <script src="js/mech.js"></script>
+  <script src="js/dinfo.js"></script>
+  <script src="js/plants2.js"></script>
+  <script src="js/potextra.js"></script>
+  <script src="js/ethno.js"></script>
+  <script src="js/plants3.js"></script>
+  <script src="js/plants4.js"></script>
+  <script src="js/plants5.js"></script>
+  <script src="js/plants6.js"></script>
+  <script src="js/plants7.js"></script>
+  <script src="js/plants8.js"></script>
+  <script src="js/parts.js"></script>
+  <script src="js/inat2.js"></script>
+  <script src="js/inat3.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/music.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/latindata.js"></script>
+  <script src="js/latin.js"></script>
+  <script src="js/histdata.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/diseases.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/pharm.js"></script>
+  <script src="js/heritage.js"></script>
+  <script src="js/vendor/smiles-drawer.min.js"></script>
+  <script src="js/chemcourse.js"></script>
+  <script src="js/course.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/simdata.js"></script>
+  <script src="js/simmodes.js"></script>
+  <script src="js/flash.js"></script>
+  <script src="js/pot.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/dev.js"></script>
+</body>
+</html>

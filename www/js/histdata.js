@@ -1,0 +1,1 @@
+window.HIST = { sources: {}, items: {} };

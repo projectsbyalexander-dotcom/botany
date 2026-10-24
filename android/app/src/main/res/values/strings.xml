@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Травник</string>
+    <string name="title_activity_main">Травник</string>
+    <string name="package_name">io.github.projectsbyalexander.travnik</string>
+    <string name="custom_url_scheme">io.github.projectsbyalexander.travnik</string>
+</resources>

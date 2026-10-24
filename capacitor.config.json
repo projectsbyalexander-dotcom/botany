@@ -1,0 +1,6 @@
+{
+  "appId": "io.github.projectsbyalexander.travnik",
+  "appName": "Травник",
+  "webDir": "www",
+  "android": { "backgroundColor": "#1b1510" }
+}
