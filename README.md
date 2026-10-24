@@ -1,10 +1,10 @@
-# Травник — Android
+# European Ethnobotany & Pharmacognosy — Android
 
-Android-версия веб-приложения «Травник Старого Света» (Capacitor 8).
+Android-версия веб-приложения European Ethnobotany & Pharmacognosy (бывший «Травник Старого Света») (Capacitor 8).
 
-**Скачать APK:** [последняя версия](../../releases/latest/download/travnik.apk) · [все версии](../../releases)
+**Скачать APK:** [последняя версия](../../releases/latest/download/ethnobotany.apk) · [все версии](../../releases)
 
-Установка: откройте `travnik.apk` на телефоне и разрешите установку из этого источника. Новая версия ставится поверх старой.
+Установка: откройте `ethnobotany.apk` на телефоне и разрешите установку из этого источника. Новая версия ставится поверх старой.
 
 ## Как обновить
 

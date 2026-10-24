@@ -36,20 +36,20 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
-          cp app/build/outputs/apk/release/app-release.apk ../travnik.apk
+          cp app/build/outputs/apk/release/app-release.apk ../ethnobotany.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: travnik-apk
-          path: travnik.apk
+          name: ethnobotany-apk
+          path: ethnobotany.apk
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Травник 1.0.${{ github.run_number }}
+          name: European Ethnobotany & Pharmacognosy 1.0.${{ github.run_number }}
           body: |
-            APK для Android. Скачайте travnik.apk на телефон и откройте его (разрешите установку из этого источника).
+            APK для Android. Скачайте ethnobotany.apk на телефон и откройте его (разрешите установку из этого источника).
             Новая версия ставится поверх старой, данные сохраняются.
-          files: travnik.apk
+          files: ethnobotany.apk
           make_latest: true
