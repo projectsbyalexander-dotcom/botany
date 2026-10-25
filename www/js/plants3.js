@@ -111,7 +111,7 @@
       ],
       prep: null, cautions: [],
       note2: "Латинское название сырья в учебнике не приведено. Страны отмечены как культура: в Польше и Беларуси укроп выращивают в огородах." },
-    { id: "chelidonium", ru: "Чистотел большой", lat: "Chelidonium majus", fam: "Маковые (Papaveraceae)", famSrc: PK("с. 70"),
+    { id: "chelidonium", ru: "Чистотел большой", lat: "Chelidonium majus", fam: "",
       drug: { ru: "Трава чистотела", lat: "" }, part: "herb", countries: { pl: "w", by: "w" },
       distSrc: [...P("Chelidonium majus"), ...LW("Chelidonium majus", "21")],
       art: { kind: "flower", petal: "#f1c232", center: "#c98a10", petals: 4, small: true, leaf: "#7f9a6a" },

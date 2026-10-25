@@ -19,11 +19,7 @@
   // Необычные ингредиенты старинных рецептов и разметка этих рецептов (js/potextra.js)
   const PX = window.POTX || { extras: [], legacy: {} };
   const EX = Object.fromEntries(PX.extras.map((x) => [x.id, x]));
-  // Убрано из игры по просьбе Игната: мак (и рецепты с ним) и ядовитое сырьё
-  const BANNED = new Set([...PX.extras.filter((x) => x.group === "poison").map((x) => x.id), "x_poppy", "papaver"]);
-  const banned = (id) => BANNED.has(id);
-  Object.values(PX.legacy).forEach((l) => { if (l.ing?.some(banned)) l.ok = false; });   // такие рецепты нельзя повторить ни из котелка, ни из «Наследия»
-  const XGROUPS = { liquid: "Жидкости и основы", animal: "Животного происхождения", food: "Пища", herb: "Европейские травы вне справочника", import: "Привозное сырьё старых аптек", mineral: "Соли и минералы", poison: "Исторические яды", vessel: "Посуда" };
+  const XGROUPS = { liquid: "Жидкости и основы", animal: "Животного происхождения", food: "Пища", herb: "Европейские травы вне справочника", import: "Привозное сырьё старых аптек", mineral: "Соли и минералы", vessel: "Посуда" };
   // Что выйдет из ингредиентов «Другого» (js/potfun.js)
   const PF = window.POTFUN;
   if (PF) for (const [k, v] of Object.entries(PF.sources)) if (!D.SOURCES[k]) D.SOURCES[k] = v;
@@ -31,7 +27,7 @@
   const funHtml = (f, bare) => f.items.map((e) => `<div class="fun-box">${bare ? "" : `<b>${e.t}</b>`}<p>${e.d} ${cite(funSrc(e))}</p></div>`).join("");
   const ING = (id) => byId[id] || EX[id];
   const ingName = (id) => ING(id)?.ru || id;
-  const XICON = { poison: "warn", vessel: "mortar", liquid: "flask", animal: "scroll", mineral: "scale", food: "jar", import: "jar", herb: "leaf" };
+  const XICON = { vessel: "mortar", liquid: "flask", animal: "scroll", mineral: "scale", food: "jar", import: "jar", herb: "leaf" };
   const artOf = (id) => byId[id] ? ART.draw(byId[id]) : PAGE_OF[id] ? ART.draw(PAGE_OF[id]) : window.XART?.has(id) ? XART.draw(id, EX[id]?.ru || "") : `<span class="x-art g-${EX[id]?.group}">${ICON(XICON[EX[id]?.group] || "jar", "ico")}</span>`;
   const ps = { book: store.get("potBook2", {}), method: "inf", grind: true, slots: Array(SLOTS).fill(null) };
   const officialConds = (p) => {
@@ -40,7 +36,7 @@
     return s;
   };
   const blendOf = (chosen) => BLENDS.find((b) => b.items.length === chosen.length && b.items.every((id) => chosen.includes(id)));
-  const legacyAll = () => [...(window.LEGACY?.mixtures || []), ...(window.LEGACY?.remedies || [])].filter((m) => PX.legacy[m.id]?.ok && !PX.legacy[m.id].ing.some(banned));
+  const legacyAll = () => [...(window.LEGACY?.mixtures || []), ...(window.LEGACY?.remedies || [])].filter((m) => PX.legacy[m.id]?.ok);
   function legacyMatch(chosen) {
     const set = new Set(chosen);
     const exacts = [], near = [];
@@ -87,7 +83,7 @@
   const methodName = (m) => legacyMethod(m) === "water" ? "смешать как сбор (Species) и заваривать настоем или отваром" : (() => { const x = POT_METHODS.find((y) => y.id === legacyMethod(m)); return `«${x.ru}» (${x.lat}): ${x.desc}`; })();
   // Необычный ингредиент, у которого есть своя страница растения
   const PAGE_OF = Object.fromEntries(PLANTS.filter((p) => p.potx).map((p) => [p.potx, p]));
-  const extraNote = (x) => `<p class="use"><span class="badge ${x.group === "poison" ? "danger" : "hist"}">${XGROUPS[x.group] || ""}</span><b>${x.ru}</b> <i>(${x.lat})</i>${x.note?.length ? ": " + x.note.map((n) => `${esc(n.t)} ${cite(n.s)}`).join(" ") : "."}${PAGE_OF[x.id] ? ` <a href="#/plant/${PAGE_OF[x.id].id}">Страница растения</a>` : ""}</p>`;
+  const extraNote = (x) => `<p class="use"><span class="badge hist">${XGROUPS[x.group] || ""}</span><b>${x.ru}</b> <i>(${x.lat})</i>${x.note?.length ? ": " + x.note.map((n) => `${esc(n.t)} ${cite(n.s)}`).join(" ") : "."}${PAGE_OF[x.id] ? ` <a href="#/plant/${PAGE_OF[x.id].id}">Страница растения</a>` : ""}</p>`;
   const legacyTitle = (m) => `${esc(m.ru)}${m.lat || m.orig ? ` <i class="muted">${esc(m.lat || m.orig)}</i>` : ""}`;
   const legacyMeta = (m) => esc([m.edition || m.period || m.date, m.region || m.where || m.place].filter(Boolean).join(", "));
 
@@ -133,15 +129,13 @@
     const tags = {}; herbs.forEach((p) => tagsOf(p).forEach((t) => (tags[t] = (tags[t] || 0) + 1)));
     const mechLine = Object.keys(tags).length ? `<p class="hint">Ведущие вещества смеси: ${Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([t, n]) => tagL(t, n)).join(" ")}</p>` : "";
     const extrasHtml = extras.length ? `<h4>Другие ингредиенты</h4>${extras.map(extraNote).join("")}` : "";
-    const poison = extras.filter((x) => x.group === "poison");
-    const poisonHtml = poison.length ? `<p class="caution"><b>Ядовито.</b> ${poison.map((x) => x.ru).join(", ")}: эти вещества сильнодействующие или токсичные. Рецепт приведён только как история фармации; повторять его нельзя.</p>` : "";
     const legacyHtml = () => {
       let h = "";
       if (leg.exact) h += `<div class="ok-box">${legacyMark()} <b>Вы повторили старинный рецепт:</b> ${legacyTitle(leg.exact)} <span class="meta-line">${legacyMeta(leg.exact)}</span>.${leg.same.length ? ` Тот же состав: ${leg.same.map((m) => `<a href="#/heritage/${m.id}">${esc(m.ru)}</a> <span class="meta-line">${legacyMeta(m)}</span>`).join("; ")}.` : ""} ${cite(leg.exact.s || leg.exact.text?.[0]?.s)} <a href="#/heritage/${leg.exact.id}">Открыть в «Наследии»</a></div>`;
       if (leg.near.length) h += `<p class="hint">${legacyMark(true)} Похожие старинные составы: ${leg.near.map((m) => `<a href="#/heritage/${m.id}">${esc(m.ru)}</a>`).join(", ")}.</p>`;
       return h;
     };
-    const cautions = herbs.flatMap((p) => p.cautions.map((c) => `<p class="caution"><b>${p.ru}:</b> ${c.t} ${cite(c.s)}</p>`)).join("") + poisonHtml;
+    const cautions = herbs.flatMap((p) => p.cautions.map((c) => `<p class="caution"><b>${p.ru}:</b> ${c.t} ${cite(c.s)}</p>`)).join("");
     const lat = `${method.lat} ${chosen.map((id) => byId[id] ? byId[id].drug.lat : EX[id].lat).join(" + ")}`;
 
     if (leg.exact) {
@@ -343,11 +337,11 @@
       $("#shelfhint").innerHTML = { goals: "Что можно повторить в котелке: сборы из учебника и старинные рецепты из «Наследия». Состав скрыт; если не получается, загрузите его в котелок.", herbs: "Травы справочника. Перетащите карточку в котелок или нажмите на неё.", extras: "Ингредиенты старинных рецептов, которых нет среди трав справочника: европейские травы, вино, мёд, желчь и привозное сырьё, которое закупали аптеки (корица, гвоздика, гваяковое дерево). Нажмите, чтобы положить в котелок.", methods: "Способы обработки. Первые три готовят водные извлечения по учебнику, остальные встречаются в старинных рецептах.", theory: "Теория из курса провизора: как готовят то, что лежит в котелке, и карточки для заучивания рецептов." }[shelf] + ` <a href="#/book">Книга рецептов</a>`;
       let html = "";
       if (shelf === "herbs") {
-        const list = PLANTS.filter(inCountries).filter((p) => !banned(p.id) && !banned(p.potx)).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!parts.length || partsOf(p).some((k) => parts.includes(PARTS[k]))) && (!tag || tagsOf(p).includes(tag)));
+        const list = PLANTS.filter(inCountries).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!parts.length || partsOf(p).some((k) => parts.includes(PARTS[k]))) && (!tag || tagsOf(p).includes(tag)));
         html = list.map((p) => row(p.potx || p.id, p.drug.ru, p.drug.lat, tagsOf(p).slice(0, 3).map((t) => `<span class="tag" style="--tc:${C.TAG_COLORS[t] || "#555"}">${t}</span>`).join(""))).join("");
       } else if (shelf === "extras") {
         html = Object.entries(XGROUPS).map(([g, gt]) => {
-          const xs = PX.extras.filter((x) => x.group === g && !banned(x.id) && !PAGE_OF[x.id] && hit([C.ml(x.ru, gt), x.lat]));
+          const xs = PX.extras.filter((x) => x.group === g && !PAGE_OF[x.id] && hit([C.ml(x.ru, gt), x.lat]));
           return xs.length ? `<h3 class="cp-group">${gt}</h3>${xs.map((x) => row(x.id, x.ru, x.lat, x.n ? `<span class="muted" style="font-size:.8rem">в ${x.n} рец.</span>` : "")).join("")}` : "";
         }).join("");
       } else if (shelf === "goals") {
@@ -379,7 +373,6 @@
     if (C.state.countries.length) { $("#filters").hidden = false; $("#ftog").setAttribute("aria-expanded", "true"); }
     $("#tagsel").addEventListener("change", (e) => { tag = e.target.value; draw(); });
     const put = (id, i) => {
-      if (banned(id)) return;
       if (slots.includes(id)) slots[slots.indexOf(id)] = null;
       if (i == null || i < 0) i = slots.indexOf(null);
       if (i < 0) return toast("Котелок полон: уберите что-нибудь.");
@@ -478,7 +471,7 @@
   // ---------- Книга рецептов (открытая) ----------
   function allRecipes() {
     const out = {};
-    PLANTS.filter((p) => GROUP[p.prep] && !banned(p.id)).forEach((p) => p.uses.filter((u) => u.ev !== "ethno").forEach((u) => {
+    PLANTS.filter((p) => GROUP[p.prep]).forEach((p) => p.uses.filter((u) => u.ev !== "ethno").forEach((u) => {
       const k = u.c + "|" + GROUP[p.prep];
       (out[k] = out[k] || { cond: u.c, method: GROUP[p.prep], herbs: new Set() }).herbs.add(p.id);
     }));

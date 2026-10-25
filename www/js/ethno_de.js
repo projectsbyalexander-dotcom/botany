@@ -157,7 +157,7 @@
       names: [t("В Швейцарии: Rämschelen.", KH("Bärlauch"))],
       uses: [{ r: KZ, c: null, t: "Режут как шнитт-лук и щедро кладут в суп или едят как салат; в июне растение отмирает.", s: KH("Bärlauch") }],
       facts: [t("Название «медвежий лук» Кюнцле объяснял тем, что медведи после спячки массово поедают его и быстро набирают силу.", KH("Bärlauch"))],
-      warn: [t("Детей и неопытных людей нельзя посылать за черемшой: они могут принести смертельно ядовитый безвременник. Надёжный признак — сильный чесночный запах, у безвременника его нет.", KH("Bärlauch"))],
+      warn: [t("Детей и неопытных людей нельзя посылать за черемшой: они могут принести похожее на неё смертельно ядовитое растение. Надёжный признак черемши — сильный чесночный запах.", KH("Bärlauch"))],
     },
     birch: {
       uses: [
@@ -513,11 +513,6 @@
       composition: [comp("Thymus sp.", "тимьян", ""), comp("Melissa officinalis", "мелисса", "", "melissa"), comp("Mentha × piperita", "мята перечная", "", "peppermint"), comp("Elymus repens", "корневища пырея", "", "elymus"), comp("Salvia officinalis", "шалфей", "", "sage")], plant_ids: ["melissa", "peppermint", "elymus", "sage"],
       use: "Ребёнку с коклюшем — глоток каждый час; дважды в день тёплая ванна на полчаса в отваре еловых веток.", prep: "Травы заварить как чай; ветки ели сварить для ванны.", s: KU("Kinderkrankheiten, c"),
       caution: "Коклюш у ребёнка опасен; его лечит врач." },
-    { id: "kz_lung_syrup", trad: "written", kind: "herbal", ru: "Сироп для лёгочных больных из 15 растений", orig: KB("Rezept für Lungenkranke"), date: KD, region: "Швейцария", country: "ch",
-      composition: [comp("Juniperus communis", "зелёные ветки можжевельника", "3 горсти", "juniper"), comp("Plantago spp.", "подорожник", "3 горсти", "plantain_major"), comp("Urtica dioica", "крапива", "1 горсть", "nettle"), comp("Hypericum perforatum", "зверобой", "1 горсть", "stjohns"), comp("Angelica archangelica", "дягиль", "3 горсти"), comp("Verbascum spp.", "коровяк", "1 горсть", "mullein"), comp("Glechoma hederacea", "будра", "1 горсть", "glechoma"), comp("Mentha × piperita", "мята перечная", "1 горсть", "peppermint"), comp("Pimpinella anisum, Foeniculum vulgare", "анис и фенхель", "½ горсти"), comp("Cetraria islandica", "исландский мох", "1 горсть", "cetraria"), comp("Veronica sp.", "вероника", "1 горсть"), comp("Pulmonaria officinalis", "медуница", "2 горсти"), comp("Arum maculatum", "листья аронника", "½ горсти"), comp("Sambucus ebulus", "корни бузины травянистой", "½ горсти"), comp("Pimpinella saxifraga", "корни бедренца", "½ горсти", "pimpinella")],
-      plant_ids: ["juniper", "plantain_major", "nettle", "stjohns", "mullein", "glechoma", "peppermint", "cetraria", "pimpinella"],
-      use: "Внутреннее средство для «лёгочных больных всех родов» и больных инфлюэнцей.", prep: "В книге дан только состав; способ варки сиропа Кюнцле не описывает.", s: KU("Rezept für Lungenkranke"),
-      caution: "Аронник и бузина травянистая ядовиты; рецепт — история, не для повторения. Сам Кюнцле пишет, что туберкулёз по закону лечит врач." },
     { id: "kz_diabetes_tea", trad: "written", kind: "herbal", ru: "Чай при сахарной болезни", orig: KB("Zuckerkrankheit"), date: KD, region: "Швейцария", country: "ch",
       composition: [comp("Geum spp.", "гравилат («Benediktskraut»)", "3 части", "geum"), comp("Rubus fruticosus", "листья ежевики", "1 часть"), comp("Vaccinium myrtillus", "листья черники", "1 часть", "bilberry"), comp("Potentilla aurea", "лапчатка золотистая", "2 части")], plant_ids: ["geum", "bilberry"],
       use: "Полчашки пять раз в день, без сахара, сладостей и спиртного.", prep: "Смешать и заваривать.", s: KU("Zuckerkrankheit"),

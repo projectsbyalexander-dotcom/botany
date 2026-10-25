@@ -124,11 +124,6 @@
       art: { kind: "umbel", petal: "#efeadb", center: "#b8b08a" },
       compounds: "", uses: [], prep: null, cautions: [],
       note2: NOMONO },
-    { id: "papaver", ru: "Мак снотворный", lat: "Papaver somniferum", fam: "",
-      drug: { ru: "Незрелые коробочки мака", lat: "Fructus Papaveris immaturi" }, part: "berry", countries: {},
-      art: { kind: "flower", petal: "#d9a0c0", center: "#3a2f4a", petals: 4, leaf: "#8aa0a0" },
-      compounds: "", uses: [], prep: null, cautions: [],
-      note2: NOMONO + NOFAM + NOCTRY + " Источники описывают исторический обычай; сведений о дозах и безопасности в них нет." },
     { id: "vinca", ru: "Барвинок малый", lat: "Vinca minor", fam: "Кутровые (Apocynaceae)", famSrc: P("Vinca minor"),
       drug: { ru: "Побеги барвинка", lat: "" }, part: "shoot", countries: { pl: "w" },
       distSrc: [...P("Vinca minor"), ...PK("с. 99")],
@@ -177,7 +172,6 @@
     arnica: { drugSrc: M("Arnica montana") },
     stellaria: { drugSrc: LW("Stellaria media", "14") },
     heracleum: { drugSrc: P("Heracleum sphondylium") },
-    papaver: { drugSrc: M("Papaver somniferum") },
     vinca: { drugSrc: P("Vinca minor") },
     pyrus: { drugSrc: [...LW("Pyrus pyraster", "25–26"), ...B3("Pyrus pyraster")] },
     rosa_canina: { drugSrc: P("Rosa canina"), ident: [t("Шиповник собачий относится к секции Canina: аскорбиновой кислоты в плодах до 1 %, чашелистики опадают при созревании, на верхушке плода остаётся пятиугольная площадка.", PK("с. 48"))] },
@@ -312,13 +306,6 @@
         { r: POD, c: "cold", t: "Отвар цветков пили как потогонное при насморке (Udziela, 1891). Отвар корня, по поверью, защищал от холеры во время эпидемии (Gustawicz, 1882; Udziela, 1891).", s: P("Heracleum sphondylium") },
         { r: PL48, c: null, t: "Зелёные части ели в голод и варили из них суп — до Первой мировой войны (Рабка-Здруй).", s: L8("15") },
         { r: BOR, c: null, t: "Листья варят, сушат и солят для супа.", s: B3("Heracleum sphondylium") },
-      ],
-    },
-    papaver: {
-      names: [t("Польск. mak (Граужишки, Поляны), macrek (Янов-над-Вилией); в Вильно Mak; в травнике Фалимижа (Краков, 1534) — «Opium, papaver», «mak lekarski».", [...F("Papaver somniferum", "9"), ...M("Papaver somniferum"), ...FAL("13")])],
-      uses: [
-        { r: VIL, c: "sleep", t: "Сухие коробочки продавали «na sen dla dzieci» — чтобы дети спали. Фабрика Тарасейских закупила по 1 т в 1927 и 1928 гг.", s: M("Papaver somniferum") },
-        { r: fis("Граужишки, Поляны, Янов-над-Вилией"), c: null, t: "От зубной боли (Граужишки). Мак клали в рождественскую кутью (Поляны) и выращивали в огородах (Янов-над-Вилией).", s: F("Papaver somniferum", "9") },
       ],
     },
     vinca: {

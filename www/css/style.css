@@ -481,7 +481,6 @@ a.iconbtn { text-decoration: none; }
 .cp-group { font-family: var(--f-ui); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--card-muted); margin: 12px 0 2px; }
 .x-art { display: grid; place-items: center; width: 100%; height: 100%; color: var(--ink); background: #e9dfc3; }
 .x-art .ico { width: 55%; height: 55%; }
-.x-art.g-poison { background: #e7c9b8; color: #8a2a12; }
 .x-art.g-liquid { background: #e6d6c4; }
 .cp-slot .x-art { border-radius: 10px; aspect-ratio: 1; height: auto; max-height: 70%; }
 .cp-chip.old { border-style: dashed; }
