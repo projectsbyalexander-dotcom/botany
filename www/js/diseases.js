@@ -67,6 +67,7 @@
       ${d.children ? `<div class="subs">${d.children.map((c) => `<a class="chip" href="#/diseases/${c.id}">${c.ru} <span class="muted">${count(c.id)}</span></a>`).join("")}</div>` : ""}
       ${info ? INFO.filter(([k]) => info[k]?.length).map(([k, t]) => `<h4>${t}</h4>${k === "red_flags" ? `<div class="caution">${items(info[k])}</div>` : items(info[k])}`).join("") : ""}
     </div>
+    ${C.recipesForDisease ? C.recipesForDisease(ids) : ""}
     <div class="card" style="margin-top:14px">
       <div class="numrow" style="justify-content:space-between"><h3 style="margin:0">Растения (${ps.length})</h3>
         <div class="seg" id="evf" role="group" aria-label="Уровень доказательности">${[["all", "Все"], ["ema", "EMA"], ["text", "Учебник"], ["ethno", "Народное"]].map(([k, t]) => `<button type="button" data-ev="${k}" class="${evFilter === k ? "on" : ""}">${t}</button>`).join("")}</div></div>

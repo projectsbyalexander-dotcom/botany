@@ -156,10 +156,10 @@
 
   const NAV = [
     ["plants", "Растения", "leaf"], ["diseases", "Болезни", "cross"], ["pharm", "Механизмы", "mortar"],
-    ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["map", "Карта", "map"],
-    ["book", "Рецепты", "book"], ["latin", "Латынь", "scroll"], ["sources", "Источники", "library"], ["notes", "Блокнот", "pen"], ["pot", "Котелок", "pot"],
+    ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["pot", "Котелок", "pot"],
+    ["book", "Рецепты", "book"], ["latin", "Латынь", "scroll"], ["sources", "Источники", "library"], ["notes", "Блокнот", "pen"], ["map", "Карта", "map"],
   ];
-  const TABS = [["plants", "Растения", "leaf"], ["diseases", "Болезни", "cross"], ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["map", "Карта", "map"], ["", "Ещё", "library"]];
+  const TABS = [["plants", "Растения", "leaf"], ["diseases", "Болезни", "cross"], ["sim", "Провизор", "flask"], ["heritage", "Наследие", "scroll"], ["pot", "Котелок", "pot"], ["", "Ещё", "library"]];
   $("#logo").innerHTML = `${window.ROSE ? ROSE("ico logo-rose") : ICON("leaf")} Ethnobotany`;
   $("#srch").innerHTML = ICON("search");
   $("#nav").innerHTML = NAV.map(([h, t]) => `<a href="#/${h}" class="${h === "pot" ? "fun" : ""}">${t}</a>`).join("");
@@ -185,8 +185,10 @@
     ];
     app.innerHTML = `
       <div class="hero">
+        <div class="hero-art" aria-hidden="true">${["chamomile", "valerian", "stjohns", "linden", "plantain_lanc", "calendula", "yarrow", "bilberry", "sage"].map((id) => ART.draw(byId[id])).join("")}</div>
         <div class="hero-rose" aria-hidden="true">${window.ROSE ? ROSE("rose") : ""}</div>
-        <h1 data-noi18n>Ethnobotany</h1>
+        <h1 class="h1-classic">Европейская этноботаника и фармакогнозия</h1>
+        <h1 class="h1-rose" data-noi18n>Ethnobotany</h1>
         <div class="hero-orn" aria-hidden="true"><span></span>✦<span></span></div>
         <p>Фармакогнозия европейской традиции: лекарственные растения Польши, Германии, Словакии и Беларуси. Учебник и быстрый справочник; у каждого утверждения есть источник.</p>
         <div class="stats-line"><span><b>${PLANTS.length}</b>растений</span><span><b>${nLeaves}</b>состояний по МКБ-10</span><span><b>${(window.MECH?.classes || []).length || "—"}</b>классов веществ</span><span><b>${nHist || "—"}</b>исторических рецептов</span><span><b>${Object.keys(SOURCES).length}</b>источников</span></div>
@@ -206,10 +208,10 @@
   const partsOf = (p) => (p.parts && p.parts.length ? p.parts : p.part ? [p.part] : []);
   const partsText = (p) => [...new Set(partsOf(p).map((k) => PARTS[k]).filter(Boolean))].join(", ");
   page("plants", function plantsList() {
-    let q = store.get("plantsQ", ""), part = "", view = store.get("plantsView", "cards");
+    let q = store.get("plantsQ", ""), parts = store.get("plantsParts", []), view = store.get("plantsView", "cards");
     const render = () => {
       const qq = norm(q.trim());
-      const list = PLANTS.filter(inCountries).filter((p) => (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!qq ||
+      const list = PLANTS.filter(inCountries).filter((p) => (!parts.length || partsOf(p).some((k) => parts.includes(PARTS[k]))) && (!qq ||
         norm([ml(p.ru, p.drug.ru, p.fam, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds].join(" ")).includes(qq) ||
         p.uses.some((u) => norm(ml(diseaseIndex[u.c].ru, DISEASE_SYN[u.c])).includes(qq))));
       if (view === "table") {
@@ -235,7 +237,7 @@
       <p class="lead">Лекарственное растительное сырьё европейской традиции. Поиск по названию на любом языке приложения или по-латыни, по веществу или болезни.</p>
       <div class="toolbar">
         <div class="search-row"><input class="search" id="q" placeholder="Например: Hyperici herba, дубильные, кашель" value="${esc(q)}" autocomplete="off" aria-label="Поиск растений"><div class="seg" id="vw">${[["cards", "Карточки"], ["table", "Таблица"]].map(([k, t]) => `<button type="button" data-v="${k}" class="${view === k ? "on" : ""}">${t}</button>`).join("")}</div></div>
-        <div class="chips" id="parts"><button class="chip on" data-part="" type="button">Всё сырьё</button>${[...new Set(Object.values(PARTS))].map((t) => `<button class="chip" data-part="${t}" type="button">${t}</button>`).join("")}</div>
+        <div class="chips" id="parts" role="group" aria-label="Сырьё"><button class="chip ${parts.length ? "" : "on"}" data-part="" type="button">Всё сырьё</button>${[...new Set(Object.values(PARTS))].map((t) => `<button class="chip ${parts.includes(t) ? "on" : ""}" data-part="${t}" type="button">${t}</button>`).join("")}</div>
         ${countryChips()}
       </div>
       <p class="hint" id="pcount"></p>
@@ -244,9 +246,13 @@
     $("#vw").addEventListener("click", (e) => { const b = e.target.closest("[data-v]"); if (!b) return; view = b.dataset.v; store.set("plantsView", view); $$("#vw button").forEach((x) => x.classList.toggle("on", x === b)); render(); });
     $("#parts").addEventListener("click", (e) => {
       const b = e.target.closest("[data-part]"); if (!b) return;
-      part = b.dataset.part; $$("#parts .chip").forEach((c) => c.classList.toggle("on", c === b)); render();
+      // сырьё, как и страны, можно выбрать несколько сразу; оба фильтра действуют вместе
+      const t = b.dataset.part;
+      parts = !t ? [] : parts.includes(t) ? parts.filter((x) => x !== t) : [...parts, t];
+      store.set("plantsParts", parts);
+      $$("#parts .chip").forEach((c) => c.classList.toggle("on", c.dataset.part ? parts.includes(c.dataset.part) : !parts.length)); render();
     });
-    bindChips(() => PAGES.plants());
+    bindChips(() => { $$("#cf .chip").forEach((c) => c.classList.toggle("on", c.dataset.c ? state.countries.includes(c.dataset.c) : !state.countries.length)); render(); });
     render();
   });
 
@@ -401,9 +407,10 @@
 
   // ---------- Тема и музыка ----------
   const tb = $("#theme");
-  const isDark = () => (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")) === "dark";
-  const syncTheme = () => { tb.innerHTML = ICON(isDark() ? "sun" : "moon"); tb.title = isDark() ? "Светлая тема" : "Тёмная тема"; };
-  tb.addEventListener("click", () => { const t = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = t; store.set("theme", t); syncTheme(); });
+  // Две темы: классическая (по умолчанию, светлая или тёмная по системе) и тёмная «Роза»
+  const isRose = () => document.documentElement.dataset.theme === "rose";
+  const syncTheme = () => { tb.innerHTML = ICON(isRose() ? "sun" : "moon"); tb.title = isRose() ? "Обычная тема" : "Тёмная тема"; const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = getComputedStyle(document.documentElement).getPropertyValue("--page").trim() || m.content; };
+  tb.addEventListener("click", () => { const r = !isRose(); if (r) document.documentElement.dataset.theme = "rose"; else delete document.documentElement.dataset.theme; store.set("theme", r ? "rose" : null); syncTheme(); });
   syncTheme();
   const mb = $("#music");
   const syncMusic = () => { mb.innerHTML = ICON(MUSIC.playing ? "note" : "mute"); mb.title = MUSIC.playing ? "Выключить музыку" : "Включить музыку"; };

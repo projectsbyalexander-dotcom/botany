@@ -9,6 +9,16 @@
   const K = (loc) => [{ id: "karpuk", loc }];
   const sim = store.get("sim", { lessons: [], best: {}, shifts: 0, level: "student" });
   const save = () => store.set("sim", sim);
+  // «Латынь на время симулятора»: названия только по-латыни и без русских подписей на банках; при выходе прежний режим возвращается
+  const latOn = () => store.get("simLat", false);
+  const simLatApply = () => {
+    const inSim = /^#\/sim\b/.test(location.hash), prev = store.get("simLatPrev", null);
+    if (inSim && latOn() && C.latin) { if (C.latin.mode() !== "lat") { store.set("simLatPrev", C.latin.mode()); C.latin.setMode("lat"); } }
+    else if (prev && C.latin) { store.set("simLatPrev", null); C.latin.setMode(prev); }
+  };
+  window.addEventListener("hashchange", simLatApply);
+  const latBtn = () => `<button class="chip sim-lat ${latOn() ? "on" : ""}" type="button" data-simlat title="Временно показывать названия только по-латыни">${latOn() ? "Латынь включена" : "Включить латынь"}</button>`;
+  const latToggle = (after) => { store.set("simLat", !latOn()); simLatApply(); after && after(); };
 
   const LEVELS = {
     student: { ru: "Ученик", desc: "Пропись с массой сырья и русскими пояснениями. Подсказки и объяснение после каждого шага, можно исправить ошибку.", hints: true, retry: true, ruLabels: true, mass: true, timer: false },
@@ -120,6 +130,8 @@
 
   // ---------- Экран выполнения ----------
   function runTask(t, { onDone, header = "" } = {}) {
+    const baseL = t.L, withLat = () => (t.L = latOn() ? { ...baseL, ruLabels: false } : baseL);
+    t = { ...t }; withLat();
     const stages = stagesFor(t);
     let i = 0, mistakes = 0, log = [], started = Date.now(), tick;
     const res = stages.map(() => null), tries = {};
@@ -128,15 +140,26 @@
       app.innerHTML = `${header}
         <div class="sim">
           <div class="card">
-            <div class="score-line"><span>Уровень: <b>${t.L.ru}</b></span>${t.order ? `<span>Заказ <b>${t.order}</b></span>` : ""}<span>Ошибок: <b id="mist">${t.L.endOnly ? "—" : mistakes}</b></span>${t.L.timer ? `<span class="timer" id="tm">0:00</span>` : ""}</div>
+            <div class="score-line"><span>Уровень: <b>${t.L.ru}</b></span>${t.order ? `<span>Заказ <b>${t.order}</b></span>` : ""}<span>Ошибок: <b id="mist">${t.L.endOnly ? "—" : mistakes}</b></span>${t.L.timer ? `<span class="timer" id="tm">0:00</span>` : ""}${latBtn()}</div>
             <ol class="stepper" style="margin-top:10px">${stages.map((x, k) => `<li class="${k < i ? (res[k] === false && !t.L.endOnly ? "bad" : "done") : k === i ? "now" : ""}">${k + 1}. ${x.ru}</li>`).join("")}</ol>
           </div>
           ${rxHtml(t)}
-          <div class="card stage" id="stage"><h2>${s.q}</h2><div id="body"></div><div id="fb"></div></div>
+          <div class="card stage" id="stage"><h2>${s.q}</h2><div id="body"></div><div id="fb"></div><div class="btn-row sim-skip"><button class="btn ghost small" id="skip" type="button">Пропустить шаг</button><span class="hint" id="skiphint">Без штрафа: шаг не засчитывается, но и ошибкой не считается.</span></div></div>
           ${log.length ? `<div class="card"><h4 style="margin-top:0">Журнал</h4><ol class="journal">${log.map((l) => `<li class="${t.L.endOnly ? "" : l.ok ? "ok" : "err"}">${l.t}</li>`).join("")}</ol></div>` : ""}
         </div>`;
       if (t.L.timer) { clearInterval(tick); const up = () => { const s2 = Math.floor((Date.now() - started) / 1000); const el = $("#tm"); if (!el) return clearInterval(tick); el.textContent = `${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, "0")}`; }; up(); tick = setInterval(up, 1000); }
       STAGE[s.kind](s);
+      $("[data-simlat]")?.addEventListener("click", () => latToggle(() => { withLat(); render(); }));
+      // пропуск: сначала подтверждение, затем верный ответ с объяснением, без штрафа
+      $("#skip").addEventListener("click", () => {
+        const b = $("#skip");
+        if (!b.classList.contains("sure")) { b.classList.add("sure"); b.textContent = "Точно пропустить?"; return; }
+        if (res[i] === null) res[i] = "skip";
+        log.push({ ok: true, skip: true, t: "Шаг пропущен" });
+        $(".sim-skip")?.remove(); lock(true);
+        $("#fb").innerHTML = `<div class="feedback"><b>Шаг пропущен.</b> ${s.explain} ${cite(s.src)}<div class="btn-row"><button class="btn" id="go" type="button">Дальше</button></div></div>`;
+        $("#go").addEventListener("click", next); $("#go").focus({ preventScroll: true });
+      });
     };
     const next = () => { i++; if (i < stages.length) render(); else finish(); };
     const judge = (s, ok, detail) => {
@@ -152,6 +175,7 @@
       // повтор: этап рисуется заново (новый #body без старых обработчиков и выбранных банок)
       $("#again")?.addEventListener("click", () => { $("#fb").innerHTML = ""; const nb = $("#body").cloneNode(false); $("#body").replaceWith(nb); STAGE[s.kind](s); });
       lock(true);
+      if (ok || !t.L.retry) $(".sim-skip")?.remove();
       ($("#go") || $("#again"))?.focus({ preventScroll: true });
       const m = $("#mist"); if (m) m.textContent = mistakes;
     };
@@ -249,14 +273,14 @@
     const finish = () => {
       clearInterval(tick);
       const secs = Math.round((Date.now() - started) / 1000);
-      const right = res.filter(Boolean).length, score = Math.max(0, right * 10 - (t.L.endOnly ? 0 : mistakes * 2) + (t.L.timer && secs < 150 && right === stages.length ? 10 : 0));
+      const right = res.filter((r) => r === true).length, skipped = res.filter((r) => r === "skip").length, score = Math.max(0, right * 10 - (t.L.endOnly ? 0 : mistakes * 2) + (t.L.timer && secs < 150 && right === stages.length ? 10 : 0));
       MUSIC.sfx(right === stages.length ? "good" : "bad");
-      const report = stages.map((s, k) => `<li class="${res[k] ? "ok" : "err"}"><span><b>${s.ru}.</b> ${res[k] ? "" : `${s.explain} ${cite(s.src)}`}</span></li>`).join("");
+      const report = stages.map((s, k) => `<li class="${res[k] === true ? "ok" : res[k] === "skip" ? "" : "err"}"><span><b>${s.ru}.</b> ${res[k] === "skip" ? "<i>Пропущено.</i> " : ""}${res[k] === true ? "" : `${s.explain} ${cite(s.src)}`}</span></li>`).join("");
       const html = `<div class="card"><p class="verdict">${right === stages.length ? "Пропись выполнена без ошибок" : "Пропись выполнена"}</p><h2 style="margin-top:.1em">${esc(t.title)}</h2>
-        <div class="score-line"><span>Верных этапов: <b>${right} из ${stages.length}</b></span><span>Баллы: <b>${score}</b></span>${t.L.timer ? `<span>Время: <b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}</b></span>` : ""}</div>
+        <div class="score-line"><span>Верных этапов: <b>${right} из ${stages.length}</b></span>${skipped ? `<span>Пропущено: <b>${skipped}</b></span>` : ""}<span>Баллы: <b>${score}</b></span>${t.L.timer ? `<span>Время: <b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}</b></span>` : ""}</div>
         <h4>Разбор</h4><ol class="journal">${report}</ol>
         <div class="label-card" style="margin-top:12px">Аптека учебная<br>${t.kind === "blend" ? `${esc(t.title)}<br>${esc(t.rxLat)} ${t.V} ml` : `${esc(t.rxLat)} ${t.V} ml`}<br>По указанию врача.<br>Хранить в прохладном месте не более 2 суток.</div></div>`;
-      onDone ? onDone({ score, right, total: stages.length, html, secs }) : (app.innerHTML = `${back}${html}<div class="btn-row"><a class="btn" href="#/sim">К симулятору</a></div>`);
+      onDone ? onDone({ score, right, total: stages.length - skipped, skipped, html, secs }) : (app.innerHTML = `${back}${html}<div class="btn-row"><a class="btn" href="#/sim">К симулятору</a></div>`);
     };
     render();
   }
@@ -426,6 +450,7 @@
     app.innerHTML = `
       <h1>Провизор</h1>
       <p class="lead">Учебная аптека и курс фармакогнозии одним путём, от самого простого к самому частному. Теория с проверочными вопросами чередуется с практикой у аптечного стола: читаете пропись, берёте сырьё с полки, рассчитываете массу, измельчаете, готовите извлечение и отпускаете с указаниями о хранении. Каждая ступень заканчивается рабочей сменой или зачётом. Правила по учебнику фармакогнозии ${cite(K("с. 67–71"))}</p>
+      <div class="card sim-lat-card"><div><b>Латынь на время симулятора</b><p class="hint">Без перевода задания честнее: названия сырья, этикетки на банках и прописи только по-латыни. Когда вы выйдете из симулятора, прежний режим названий вернётся.</p></div>${latBtn()}</div>
       ${C.flash ? C.flash.hubHtml() : ""}
       ${C.course ? C.course.hubHtml() : ""}
       <h2>Свободная практика</h2>
@@ -437,6 +462,7 @@
         <div class="btn-row"><a class="btn ghost small" href="#/sim/photo/1">Приёмка сырья</a><a class="btn ghost small" href="#/sim/photo/2">Приёмка: латынь</a>${(window.SIMX?.tests || []).length ? `<a class="btn ghost small" href="#/sim/lab/1">Лаборатория</a><a class="btn ghost small" href="#/sim/lab/2">Лаборатория: мало реактивов</a>` : ""}${(window.SIMX?.cases || []).length ? `<a class="btn ghost small" href="#/sim/case/1">Консультации</a><a class="btn ghost small" href="#/sim/case/2">Трудные консультации</a>` : ""}</div></div>` : ""}`;
     C.course?.bindHub();
     C.flash?.bindHub();
+    $("[data-simlat]")?.addEventListener("click", () => latToggle(hub));
     $("#lv").addEventListener("click", (e) => { const b = e.target.closest("[data-l]"); if (!b) return; sim.level = b.dataset.l; save(); hub(); });
     $("#fgo").addEventListener("click", () => (location.hash = "#/sim/free/" + $("#fp").value));
   };
@@ -459,17 +485,29 @@
 
   function quiz(l) {
     const qs = l.quiz().filter(Boolean).slice(0, 6);
-    let k = 0, right = 0;
+    let k = 0, right = 0, skipped = 0;
     const head = () => `${back}<p class="kicker">Проверка · ${esc(l.ru)} · вопрос ${k + 1} из ${qs.length}</p>`;
     const ask = () => {
-      if (k >= qs.length) return finalTask(l, right, qs.length);
+      if (k >= qs.length) return finalTask(l, right, qs.length - skipped);
       const q = qs[k];
       app.innerHTML = `${head()}<div class="sim"><div class="card"><div class="score-line"><span>Вопрос <b>${k + 1} из ${qs.length}</b></span><span>Верно: <b>${right}</b></span><span>Затем: пропись целиком</span></div></div>
         <div class="card stage"><h2>${q.q}</h2>${q.kind === "opts"
           ? `<div class="opts" id="qo">${q.opts.map(([t, ok], i) => `<button class="opt" type="button" data-ok="${ok}"><span class="k">${"АБВГ"[i]}</span>${esc(t)}</button>`).join("")}</div>`
           : `<form class="numrow" id="qn"><input id="qv" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Ответ"><span class="muted">${q.unit}</span><button class="btn" type="submit">Проверить</button></form>`}
-        <div id="qfb"></div></div></div>`;
+        <div id="qfb"></div><div class="btn-row sim-skip"><button class="btn ghost small" id="qskip" type="button">Пропустить вопрос</button><span class="hint">Без штрафа: вопрос не идёт в счёт.</span></div></div></div>
+        <div class="sim-lat-row">${latBtn()}</div>`;
+      $("[data-simlat]")?.addEventListener("click", () => latToggle(ask));
+      $("#qskip").addEventListener("click", () => {
+        const b = $("#qskip");
+        if (!b.classList.contains("sure")) { b.classList.add("sure"); b.textContent = "Точно пропустить?"; return; }
+        skipped++; $(".sim-skip")?.remove();
+        $$("#qo .opt").forEach((x) => { x.disabled = true; if (x.dataset.ok === "true") x.classList.add("right"); });
+        if ($("#qv")) { $("#qv").disabled = true; $("#qn button").disabled = true; }
+        $("#qfb").innerHTML = `<div class="feedback"><b>Вопрос пропущен.</b> ${q.kind === "opts" ? "" : `Правильно: ${String(q.ans).replace(".", ",")} ${q.unit}. `}${q.ex} ${cite(q.s)}<div class="btn-row"><button class="btn" id="qnext" type="button">${k + 1 < qs.length ? "Следующий вопрос" : "К прописи"}</button></div></div>`;
+        $("#qnext").addEventListener("click", () => { k++; ask(); }); $("#qnext").focus();
+      });
       const fb = (ok, extra = "") => {
+        $(".sim-skip")?.remove();
         if (ok) right++;
         MUSIC.sfx(ok ? "plop" : "bad");
         $("#qfb").innerHTML = `<div class="feedback ${ok ? "good" : "bad"}"><b>${ok ? "Верно." : "Неверно."}</b> ${extra}${q.ex} ${cite(q.s)}<div class="btn-row"><button class="btn" id="qnext" type="button">${k + 1 < qs.length ? "Следующий вопрос" : "К прописи"}</button></div></div>`;
@@ -496,7 +534,7 @@
     const f = l.final;
     const t = f.blend ? makeTask({ blend: shuffle(BLENDS)[0].id, level: f.level }) : makeTask({ plant: shuffle(f.pool())[0].id, level: f.level });
     runTask(t, { header: `${back}<p class="kicker">Проверка · ${esc(l.ru)} · пропись целиком · вопросы: ${qRight} из ${qTotal}</p>`, onDone: (r) => {
-      const qOk = qRight >= qTotal - 1, tOk = r.right === r.total, pass = qOk && tOk;
+      const qOk = qRight >= qTotal - 1, tOk = r.right === r.total && r.right > 0, pass = qOk && tOk;
       if (pass && !sim.lessons.includes(l.id)) { sim.lessons.push(l.id); save(); }
       const nx = C.course?.next("l:" + l.id);
       app.innerHTML = `${back}<div class="card"><p class="verdict">${pass ? "Урок пройден" : "Урок не засчитан"}</p>
@@ -628,6 +666,7 @@
   }
 
   C.page("sim", function simPage(mode, arg) {
+    simLatApply();
     if (mode && mode.includes("?")) mode = mode.split("?")[0];
     if (arg && arg.includes("?")) arg = arg.split("?")[0];
     if (mode === "lesson") return lesson(arg);

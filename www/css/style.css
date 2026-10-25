@@ -765,56 +765,51 @@ main.wrap { overflow-wrap: break-word; }
 /* В переводах пояснение к коду МКБ бывает длинным */
 .icd { white-space: normal; overflow-wrap: anywhere; }
 
-/* ===== Роза: взрослая тёмная оболочка (октябрь 2026) ===== */
+/* ===== Две темы: классическая (по умолчанию) и «Роза» (тёмная, data-theme="rose") ===== */
 :root {
-  --page: #0e0a0b; --page-2: #1a1214; --page-fg: #eee3d6; --page-muted: #a9978d;
-  --card: #161012; --card-2: #21161a; --card-fg: #f1e7db; --card-muted: #a9988e; --line: #36242a;
-  --accent: #a82a3b; --on-accent: #fff6ef; --gold: #c9a24c; --olive: #3f6a3d; --olive-2: #33583a;
-  --row: #1c1316; --row-2: #251a1e;
-  --link: #dba868; --focus: #c9a24c;
-  --rose: #a82a3b; --rose-deep: #5e0d18;
-  --shadow: 0 1px 0 rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.45);
-  --f-display: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
   /* безопасные зоны: env() в новых WebView, переменные Capacitor в старых */
   --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
   --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
   --sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
   --sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --rose: #c0663a;
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --page: #efe7dc; --page-2: #e5dacb; --page-fg: #241618; --page-muted: #6d5852;
-    --card: #fbf6ef; --card-2: #f3eadf; --card-fg: #241618; --card-muted: #6d5852; --line: #dccbbb;
-    --accent: #8e1f30; --on-accent: #fff8f2; --gold: #876114; --olive: #3d6a3b; --olive-2: #325834;
-    --row: #f7efe5; --row-2: #efe4d6; --link: #8e1f30; --focus: #8e1f30; --rose: #8e1f30; --rose-deep: #5e0d18;
-    --shadow: 0 1px 0 rgba(60,20,25,.08), 0 8px 22px rgba(60,20,25,.12);
-  }
+:root[data-theme="rose"] {
+  --fc-due: #7fb2dc; --fc-new: #9cc773; --fc-again: #e58a6c;
+  --page: #0e0a0b; --page-2: #1a1214; --page-fg: #eee3d6; --page-muted: #a9978d;
+  --card: #161012; --card-2: #21161a; --card-fg: #f1e7db; --card-muted: #a9988e; --line: #36242a;
+  --accent: #a82a3b; --on-accent: #fff6ef; --gold: #c9a24c; --olive: #3f6a3d; --olive-2: #33583a;
+  --row: #1c1316; --row-2: #251a1e;
+  --danger: #e58a72; --danger-bg: #3a1f18; --ok: #9fbf6a; --ok-bg: #22301a;
+  --ema: #79a6c9; --text-ev: #9ebc68; --ethno: #d79457; --on-badge: #15100b;
+  --link: #dba868; --focus: #c9a24c;
+  --map-0: #2b2219; --map-1: #4a4a25; --map-2: #6a7132; --map-3: #8f9a43; --map-4: #c2c66a;
+  --rose: #a82a3b; --rose-deep: #5e0d18;
+  --shadow: 0 1px 0 rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.45);
+  --f-display: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
+  color-scheme: dark;
 }
-:root[data-theme="light"] {
-  --page: #efe7dc; --page-2: #e5dacb; --page-fg: #241618; --page-muted: #6d5852;
-  --card: #fbf6ef; --card-2: #f3eadf; --card-fg: #241618; --card-muted: #6d5852; --line: #dccbbb;
-  --accent: #8e1f30; --on-accent: #fff8f2; --gold: #876114; --olive: #3d6a3b; --olive-2: #325834;
-  --row: #f7efe5; --row-2: #efe4d6; --link: #8e1f30; --focus: #8e1f30; --rose: #8e1f30; --rose-deep: #5e0d18;
-  --shadow: 0 1px 0 rgba(60,20,25,.08), 0 8px 22px rgba(60,20,25,.12);
-}
-body { background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--rose) 16%, transparent), transparent 60%) no-repeat, var(--page); background-attachment: fixed; }
-h1 { font-weight: 700; letter-spacing: .005em; line-height: 1.05; }
-.logo { font-size: 1.75rem; letter-spacing: .02em; }
-.logo .ico.logo-rose { width: 30px; height: 30px; }
-.cp-title { font-size: 1.7rem; }
-.hero { text-align: center; margin: 0 auto; padding-top: 22px; }
-.hero p { margin-left: auto; margin-right: auto; }
-.hero .stats-line { justify-content: center; }
-.hero-rose { width: 150px; height: 150px; margin: 6px auto 4px; filter: drop-shadow(0 0 28px color-mix(in srgb, var(--rose) 45%, transparent)); animation: rose-in 1.4s ease-out both; }
+.logo .ico.logo-rose { width: 32px; height: 32px; }
+.hero-rose, .hero-orn, .hero .h1-rose { display: none; }
+:root[data-theme="rose"] .hero-art, :root[data-theme="rose"] .hero .h1-classic { display: none; }
+:root[data-theme="rose"] .hero .h1-rose { display: block; }
+:root[data-theme="rose"] body { background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--rose) 16%, transparent), transparent 60%) no-repeat, var(--page); background-attachment: fixed; }
+:root[data-theme="rose"] h1 { font-weight: 700; letter-spacing: .005em; line-height: 1.05; }
+:root[data-theme="rose"] .logo { font-size: 1.75rem; letter-spacing: .02em; }
+:root[data-theme="rose"] .cp-title { font-size: 1.7rem; }
+:root[data-theme="rose"] .hero { text-align: center; margin: 0 auto; padding-top: 22px; }
+:root[data-theme="rose"] .hero p { margin-left: auto; margin-right: auto; }
+:root[data-theme="rose"] .hero .stats-line { justify-content: center; }
+:root[data-theme="rose"] .hero-rose { display: block; width: 150px; height: 150px; margin: 6px auto 4px; filter: drop-shadow(0 0 24px color-mix(in srgb, var(--rose) 40%, transparent)); animation: rose-in 1.4s ease-out both; }
 .hero-rose svg { width: 100%; height: 100%; }
-.hero h1 { font-size: 4rem; margin-bottom: .1em; }
-.hero-orn { display: flex; align-items: center; gap: 12px; justify-content: center; color: var(--gold); font-size: .9rem; margin: 0 auto 10px; max-width: 320px; }
+:root[data-theme="rose"] .hero h1 { font-size: 4rem; margin-bottom: .1em; }
+:root[data-theme="rose"] .hero-orn { display: flex; align-items: center; gap: 12px; justify-content: center; color: var(--gold); font-size: .9rem; margin: 0 auto 10px; max-width: 320px; }
 .hero-orn span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: .6; }
 @keyframes rose-in { from { opacity: 0; transform: scale(.9) rotate(-8deg); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .hero-rose { animation: none; } }
-.tile .ico { color: var(--gold); }
-.tile:hover { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
-header.top { border-bottom-color: color-mix(in srgb, var(--gold) 22%, var(--line)); }
+@media (prefers-reduced-motion: reduce) { .hero-rose { animation: none !important; } }
+:root[data-theme="rose"] .tile .ico { color: var(--gold); }
+:root[data-theme="rose"] .tile:hover { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
+:root[data-theme="rose"] header.top { border-bottom-color: color-mix(in srgb, var(--gold) 22%, var(--line)); }
 
 /* Шапка и нижняя панель: безопасные зоны Android (edge-to-edge) и узкие экраны */
 html, body { overflow-x: clip; }
@@ -829,20 +824,20 @@ header.top .wrap { gap: 10px; min-width: 0; }
 }
 @media (max-width: 760px) {
   .cp-band { top: var(--sat); }
-  .hero h1 { font-size: 3.1rem; }
-  .hero-rose { width: 120px; height: 120px; }
+  :root[data-theme="rose"] .hero h1 { font-size: 3.1rem; }
+  :root[data-theme="rose"] .hero-rose { width: 120px; height: 120px; }
 }
 @media (max-width: 440px) {
   header.top .wrap { padding: 6px 10px; gap: 6px; }
-  .logo { font-size: 1.45rem; gap: 6px; }
-  .logo .ico.logo-rose { width: 24px; height: 24px; }
+  .logo, :root[data-theme="rose"] .logo { font-size: 1.45rem; gap: 6px; }
+  .logo .ico.logo-rose { width: 26px; height: 26px; }
   .hdr-tools { gap: 4px; }
   .iconbtn { width: 36px; height: 36px; }
   .iconbtn .ico { width: 18px; height: 18px; }
   .lat-btn { font-size: .78rem; }
 }
 @media (max-width: 360px) {
-  .logo { font-size: 1.3rem; }
+  .logo, :root[data-theme="rose"] .logo { font-size: 1.3rem; }
 }
 @media (max-width: 335px) {
   .logo .ico.logo-rose { display: none; }
@@ -889,3 +884,17 @@ header.top .wrap { gap: 10px; min-width: 0; }
 #ndel.sure { border-color: var(--danger); color: var(--danger); }
 .notes-search { flex-wrap: wrap; }
 .notes-search .search { flex: 1 1 180px; }
+
+/* Наследие: вкладки в две строки и уже, чтобы на телефоне помещалось больше двух */
+.tabs.tabs-strong button { white-space: normal; max-width: 9.5em; line-height: 1.15; padding: 8px 10px; text-align: left; }
+@media (max-width: 520px) { .tabs.tabs-strong { gap: 2px; } .tabs.tabs-strong button { font-size: .92rem; padding: 7px 8px; max-width: 7.6em; } }
+
+/* Симулятор: пропуск шага и латынь на время */
+.sim-skip { margin-top: 10px; align-items: center; }
+#skip.sure, #qskip.sure { border-color: var(--danger); color: var(--danger); }
+.sim-lat-card { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.sim-lat-card > div { flex: 1 1 240px; }
+.sim-lat-card .hint { margin: 4px 0 0; }
+.score-line .sim-lat { margin-left: auto; }
+.sim-lat-row { margin: 8px 0; }
+.sim-lat.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }

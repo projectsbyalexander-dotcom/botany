@@ -2,5 +2,5 @@
   "appId": "io.github.projectsbyalexander.travnik",
   "appName": "Ethnobotany",
   "webDir": "www",
-  "android": { "backgroundColor": "#0e0a0b" }
+  "android": { "backgroundColor": "#17120d" }
 }

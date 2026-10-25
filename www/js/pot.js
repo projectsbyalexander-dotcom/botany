@@ -28,7 +28,7 @@
   const ING = (id) => byId[id] || EX[id];
   const ingName = (id) => ING(id)?.ru || id;
   const XICON = { poison: "warn", vessel: "mortar", liquid: "flask", animal: "scroll", mineral: "scale", food: "jar", import: "jar", herb: "leaf" };
-  const artOf = (id) => byId[id] ? ART.draw(byId[id]) : PAGE_OF[id] ? ART.draw(PAGE_OF[id]) : `<span class="x-art g-${EX[id]?.group}">${ICON(XICON[EX[id]?.group] || "jar", "ico")}</span>`;
+  const artOf = (id) => byId[id] ? ART.draw(byId[id]) : PAGE_OF[id] ? ART.draw(PAGE_OF[id]) : window.XART?.has(id) ? XART.draw(id, EX[id]?.ru || "") : `<span class="x-art g-${EX[id]?.group}">${ICON(XICON[EX[id]?.group] || "jar", "ico")}</span>`;
   const ps = { book: store.get("potBook2", {}), method: "inf", grind: true, slots: Array(SLOTS).fill(null) };
   const officialConds = (p) => {
     const s = new Set();
@@ -271,7 +271,7 @@
 
   C.page("pot", function potPage(load) {
     const slots = ps.slots;
-    let q = "", lastResult = null, part = "", tag = "", shelf = store.get("potShelf", "herbs");
+    let q = "", lastResult = null, parts = [], tag = "", shelf = store.get("potShelf", "herbs");
     if (!["herbs", "extras", "goals", "methods", "theory"].includes(shelf)) shelf = "herbs";
     const allTags = [...new Set(PLANTS.flatMap(tagsOf))].sort();
     app.innerHTML = `
@@ -294,7 +294,7 @@
         <div class="cp-tools" id="tools">
           <div class="search-row"><input class="search" id="q" placeholder="Найти сырьё" autocomplete="off" aria-label="Найти сырьё"><button class="filter-btn" id="ftog" type="button" aria-expanded="false">${ICON("filter")} Фильтры</button></div>
           <div id="filters" hidden>
-            <div class="chips" id="parts"><button class="chip on" data-part="" type="button">Всё сырьё</button>${[...new Set(Object.values(PARTS))].map((t) => `<button class="chip" data-part="${t}" type="button">${t}</button>`).join("")}</div>
+            <div class="chips" id="parts" role="group" aria-label="Сырьё"><button class="chip on" data-part="" type="button">Всё сырьё</button>${[...new Set(Object.values(PARTS))].map((t) => `<button class="chip" data-part="${t}" type="button">${t}</button>`).join("")}</div>
             <div class="filter-row"><label for="tagsel">Вещества</label><select id="tagsel" class="sel"><option value="">любые</option>${allTags.map((t) => `<option>${t}</option>`).join("")}</select></div>
             ${countryChips()}
           </div>
@@ -302,7 +302,7 @@
         <p class="hint" id="shelfhint"></p>
         <div class="cp-list" id="list"></div>
       </div>`;
-    bindChips(() => PAGES_pot());
+    bindChips(() => { $$("#cf .chip").forEach((c) => c.classList.toggle("on", c.dataset.c ? C.state.countries.includes(c.dataset.c) : !C.state.countries.length)); draw(); });
     const preview = () => {
       const chosen = slots.filter(Boolean), left = SLOTS - chosen.length;
       const method = POT_METHODS.find((m) => m.id === ps.method);
@@ -337,7 +337,7 @@
       $("#shelfhint").innerHTML = { goals: "Что можно повторить в котелке: сборы из учебника и старинные рецепты из «Наследия». Состав скрыт; если не получается, загрузите его в котелок.", herbs: "Травы справочника. Перетащите карточку в котелок или нажмите на неё.", extras: "Ингредиенты старинных рецептов, которых нет среди трав справочника: европейские травы, вино, мёд, желчь, яды и привозное сырьё, которое закупали аптеки (корица, гвоздика, гваяковое дерево). Нажмите, чтобы положить в котелок.", methods: "Способы обработки. Первые три готовят водные извлечения по учебнику, остальные встречаются в старинных рецептах.", theory: "Теория из курса провизора: как готовят то, что лежит в котелке, и карточки для заучивания рецептов." }[shelf] + ` <a href="#/book">Книга рецептов</a>`;
       let html = "";
       if (shelf === "herbs") {
-        const list = PLANTS.filter(inCountries).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!part || partsOf(p).some((k) => PARTS[k] === part)) && (!tag || tagsOf(p).includes(tag)));
+        const list = PLANTS.filter(inCountries).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!parts.length || partsOf(p).some((k) => parts.includes(PARTS[k]))) && (!tag || tagsOf(p).includes(tag)));
         html = list.map((p) => row(p.potx || p.id, p.drug.ru, p.drug.lat, tagsOf(p).slice(0, 3).map((t) => `<span class="tag" style="--tc:${C.TAG_COLORS[t] || "#555"}">${t}</span>`).join(""))).join("");
       } else if (shelf === "extras") {
         html = Object.entries(XGROUPS).map(([g, gt]) => {
@@ -366,7 +366,8 @@
     });
     $("#parts").addEventListener("click", (e) => {
       const b = e.target.closest("[data-part]"); if (!b) return;
-      part = b.dataset.part; $$("#parts .chip").forEach((c) => c.classList.toggle("on", c === b)); draw();
+      const t = b.dataset.part; parts = !t ? [] : parts.includes(t) ? parts.filter((x) => x !== t) : [...parts, t];
+      $$("#parts .chip").forEach((c) => c.classList.toggle("on", c.dataset.part ? parts.includes(c.dataset.part) : !parts.length)); draw();
     });
     $("#ftog").onclick = (e) => { const f = $("#filters"); f.hidden = !f.hidden; e.currentTarget.setAttribute("aria-expanded", String(!f.hidden)); };
     if (C.state.countries.length) { $("#filters").hidden = false; $("#ftog").setAttribute("aria-expanded", "true"); }
@@ -540,6 +541,29 @@
   }
 
   // Для версии разработчика: все рецепты книги как сваренные
+  // Рецепты для страницы болезни: простые средства по показанию и сборы учебника, выше списка растений
+  C.recipesForDisease = (ids) => {
+    const ord = { ema: 0, text: 1 };
+    const evOf = (p, c) => Math.min(...p.uses.filter((u) => u.c === c && u.ev !== "ethno").map((u) => ord[u.ev] ?? 2));
+    const simple = Object.entries(allRecipes()).filter(([, r]) => ids.has(r.cond));
+    const blends = BLENDS.filter((b) => b.items.filter((id) => byId[id].uses.some((u) => u.ev !== "ethno" && ids.has(u.c))).length >= 2);
+    if (!simple.length && !blends.length) return "";
+    const rx = (p) => `<div class="rx-line"><span class="n-lat">Rp.: ${C.latT(C.rxName ? C.rxName(p) : p.drug.lat)} ${p.prep === "mucilage" ? "" : `(${p.prep === "valerian" ? "1:30" : "1:10"}) 200 ml`}</span><span class="n-only-ru"><span>${esc(p.drug.ru)}</span>: <span>${METHODS[p.prep]?.ru || ""}</span>${p.prep === "mucilage" ? "" : `<span> ${p.prep === "valerian" ? "1:30" : "1:10"}, 200 мл</span>`}</span></div>`;
+    const card = (href, title, sub, body) => `<div class="card recipe dz-rcp"><h3><a class="stretch" href="${href}">${title}</a></h3>${sub ? `<p class="muted" style="margin:.2em 0">${sub}</p>` : ""}${body}</div>`;
+    return `<div class="card" style="margin-top:14px"><h3 style="margin-top:0">Рецепты (${simple.length + blends.length})</h3>
+      <p class="hint">Пропись, способ и показание. Нажмите на рецепт, чтобы открыть полную карточку: как готовят, измельчение, предостережения. Ниже списка рецептов идут растения.</p>
+      <div class="book-grid">${blends.map((b) => card(`#/book/blend:${b.id}`, esc(b.ru), esc(b.goal), `<div class="formula"><div class="rp">Rp.: Specierum ${b.items.map((id) => byId[id].drug.lat).join(", ")}</div></div>`)).join("")}
+      ${simple.map(([k, r]) => {
+        const m = POT_METHODS.find((x) => x.id === r.method), hs = [...r.herbs].map((id) => byId[id]).sort((a, b) => evOf(a, r.cond) - evOf(b, r.cond));
+        return card(`#/book/${encodeURIComponent(k)}`, `${m.ru}: ${lc1(diseaseIndex[r.cond].ru)}`, `${hs.length > 1 ? `Любое из ${hs.length} видов сырья, каждое отдельно. ` : ""}${C.icd(r.cond)}`,
+          `<div class="formula">${hs.slice(0, 4).map(rx).join("")}${hs.length > 4 ? `<p class="hint" style="margin:.3em 0 0">и ещё ${hs.length - 4} в полной карточке</p>` : ""}</div>`);
+      }).join("")}</div></div>`;
+  };
+  // для поиска: рецепты как отдельный тип результатов
+  C.potRecipeList = () => [
+    ...BLENDS.map((b) => ({ title: b.ru, sub: "Сбор из учебника", href: `#/book/blend:${b.id}`, names: [b.ru], body: [b.goal, b.why, b.items.map((id) => `${byId[id].ru} ${byId[id].drug.lat}`).join(" ")] })),
+    ...Object.entries(allRecipes()).map(([k, r]) => { const m = POT_METHODS.find((x) => x.id === r.method); return { title: `${m.ru}: ${lc1(diseaseIndex[r.cond].ru)}`, sub: m.lat, href: `#/book/${encodeURIComponent(k)}`, names: [m.ru, diseaseIndex[r.cond].ru], body: [[...r.herbs].map((id) => `${byId[id].ru} ${byId[id].drug.lat}`).join(" ")] }; }),
+  ];
   C.potAllBook = () => {
     const t = Date.now(), out = {};
     BLENDS.forEach((b) => (out["blend:" + b.id] = { title: b.ru, herbs: b.items, method: "inf", t }));

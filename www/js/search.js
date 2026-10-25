@@ -6,7 +6,8 @@
   // На другом языке ищем и по переводу (js/i18n.js): названия на обоих языках, текст в переводе
   const T = window.I18N && I18N.lang !== "ru" ? (s) => I18N.t(String(s)) : null;
   const txt = (segs) => (segs || []).map((g) => (T ? T(g.t) : g.t)).join(" ");
-  const TYPES = { plant: "Растения", disease: "Болезни", class: "Вещества", legacy: "Наследие", place: "Аптеки", source: "Источники" };
+  // рецепты в выдаче идут выше растений
+  const TYPES = { disease: "Болезни", recipe: "Рецепты", legacy: "Наследие", plant: "Растения", class: "Вещества", place: "Аптеки", source: "Источники" };
 
   let INDEX = null;
   function build() {
@@ -24,6 +25,7 @@
         names: [d.ru, DISEASE_LAT[d.id], DISEASE_ICD[d.id], DISEASE_SYN[d.id]], body: [d.note, ...Object.values(I).map(txt)] });
     }
     for (const c of window.MECH?.classes || []) out.push({ type: "class", title: c.ru, sub: c.lat || "", href: `#/pharm/${c.id}`, letter: c.ru, names: [c.ru, c.lat, c.tag], body: [txt(c.chem), txt(c.mech), txt(c.effects), txt(c.safety)] });
+    for (const r of C.potRecipeList ? C.potRecipeList() : []) out.push({ type: "recipe", letter: r.title, ...r });
     const L = window.LEGACY || {};
     for (const m of [...(L.mixtures || []), ...(L.remedies || [])]) out.push({ type: "legacy", title: m.ru, sub: [m.lat || m.orig, m.edition || m.period || m.date].filter(Boolean).join(" · "), href: `#/heritage/${m.id}`, letter: m.ru,
       names: [m.ru, m.lat, m.orig], body: [m.use, txt(m.text), txt(m.modern), (m.composition || []).map((c) => `${c.lat} ${c.ru}`).join(" "), m.region, m.place] });
