@@ -289,6 +289,7 @@
             <button class="cp-chip" id="clear" type="button">Очистить</button>
           </div>
         </div>
+        <div class="cp-mini" id="cpmini" hidden><span class="cp-mini-n"><span>В котелке:</span> <b id="cpminin">0</b></span><button class="btn small ghost" id="cpup" type="button">К котелку</button><button class="btn small" id="cpminicook" type="button">Приготовить</button></div>
         <div id="result"></div>
         <div class="tabs cp-tabs" id="shelf">${[["herbs", "Травы"], ["extras", "Другое"], ["goals", "Рецепты"], ["methods", "Способы"], ["theory", "Теория"]].map(([k, t]) => `<button type="button" data-s="${k}" class="${k === shelf ? "on" : ""}">${t}</button>`).join("")}</div>
         <div class="cp-tools" id="tools">
@@ -305,6 +306,7 @@
     bindChips(() => { $$("#cf .chip").forEach((c) => c.classList.toggle("on", c.dataset.c ? C.state.countries.includes(c.dataset.c) : !C.state.countries.length)); draw(); });
     const preview = () => {
       const chosen = slots.filter(Boolean), left = SLOTS - chosen.length;
+      if ($("#cpminin")) $("#cpminin").textContent = chosen.length;
       const method = POT_METHODS.find((m) => m.id === ps.method);
       let icon = ART.pot(), title, stats;
       if (lastResult) {
@@ -430,6 +432,14 @@
       showAnswer(lastRandom, "Случайный рецепт");
     };
     if (load && goalFor(load)) { history.replaceState(null, "", "#/pot"); showAnswer(load, "Рецепт"); }
+    // На телефоне панель котелка не липкая: когда она ушла за экран, внизу появляется узкая полоска с кнопками
+    const mini = $("#cpmini"), band0 = $(".cp-band");
+    if (mini && band0 && "IntersectionObserver" in window) {
+      const io = new IntersectionObserver(([en]) => { if (!document.body.contains(band0)) return io.disconnect(); mini.hidden = en.isIntersecting || !matchMedia("(max-width: 760px)").matches; });
+      io.observe(band0);
+      $("#cpup").addEventListener("click", () => band0.scrollIntoView({ behavior: "smooth", block: "start" }));
+      $("#cpminicook").addEventListener("click", () => cookNow());
+    }
     const cookNow = () => {
       const chosen = slots.filter(Boolean);
       if (!chosen.length) return toast("Котелок пуст.");

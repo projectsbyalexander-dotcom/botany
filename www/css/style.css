@@ -898,3 +898,12 @@ header.top .wrap { gap: 10px; min-width: 0; }
 .score-line .sim-lat { margin-left: auto; }
 .sim-lat-row { margin: 8px 0; }
 .sim-lat.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* Котелок на телефоне: панель прокручивается вместе со страницей, вместо неё внизу узкая полоска */
+@media (max-width: 760px) {
+  .cp-band { position: static; }
+  .cp-mini { position: fixed; left: 8px; right: 8px; bottom: calc(66px + var(--sab)); z-index: 25; display: flex; gap: 8px; align-items: center; background: var(--olive); color: #fff8ec; border-radius: 14px; padding: 8px 10px; box-shadow: var(--shadow); font-family: var(--f-ui); }
+  .cp-mini[hidden] { display: none; }
+  .cp-mini-n { flex: 1; font-size: .95rem; }
+  .cp-mini .btn.ghost { color: #fff8ec; border-color: rgba(255,248,236,.6); background: transparent; }
+}
