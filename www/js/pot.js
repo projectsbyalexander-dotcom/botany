@@ -19,6 +19,10 @@
   // Необычные ингредиенты старинных рецептов и разметка этих рецептов (js/potextra.js)
   const PX = window.POTX || { extras: [], legacy: {} };
   const EX = Object.fromEntries(PX.extras.map((x) => [x.id, x]));
+  // Убрано из игры по просьбе Игната: мак (и рецепты с ним) и ядовитое сырьё
+  const BANNED = new Set([...PX.extras.filter((x) => x.group === "poison").map((x) => x.id), "x_poppy", "papaver"]);
+  const banned = (id) => BANNED.has(id);
+  Object.values(PX.legacy).forEach((l) => { if (l.ing?.some(banned)) l.ok = false; });   // такие рецепты нельзя повторить ни из котелка, ни из «Наследия»
   const XGROUPS = { liquid: "Жидкости и основы", animal: "Животного происхождения", food: "Пища", herb: "Европейские травы вне справочника", import: "Привозное сырьё старых аптек", mineral: "Соли и минералы", poison: "Исторические яды", vessel: "Посуда" };
   // Что выйдет из ингредиентов «Другого» (js/potfun.js)
   const PF = window.POTFUN;
@@ -36,7 +40,7 @@
     return s;
   };
   const blendOf = (chosen) => BLENDS.find((b) => b.items.length === chosen.length && b.items.every((id) => chosen.includes(id)));
-  const legacyAll = () => [...(window.LEGACY?.mixtures || []), ...(window.LEGACY?.remedies || [])].filter((m) => PX.legacy[m.id]?.ok);
+  const legacyAll = () => [...(window.LEGACY?.mixtures || []), ...(window.LEGACY?.remedies || [])].filter((m) => PX.legacy[m.id]?.ok && !PX.legacy[m.id].ing.some(banned));
   function legacyMatch(chosen) {
     const set = new Set(chosen);
     const exacts = [], near = [];
@@ -336,14 +340,14 @@
       const hit = (arr) => !qq || C.norm(arr.filter(Boolean).join(" ")).includes(qq);
       $("#tools").hidden = shelf === "methods" || shelf === "theory" || shelf === "goals";
       $("#ftog").hidden = shelf !== "herbs"; if (shelf !== "herbs") $("#filters").hidden = true;
-      $("#shelfhint").innerHTML = { goals: "Что можно повторить в котелке: сборы из учебника и старинные рецепты из «Наследия». Состав скрыт; если не получается, загрузите его в котелок.", herbs: "Травы справочника. Перетащите карточку в котелок или нажмите на неё.", extras: "Ингредиенты старинных рецептов, которых нет среди трав справочника: европейские травы, вино, мёд, желчь, яды и привозное сырьё, которое закупали аптеки (корица, гвоздика, гваяковое дерево). Нажмите, чтобы положить в котелок.", methods: "Способы обработки. Первые три готовят водные извлечения по учебнику, остальные встречаются в старинных рецептах.", theory: "Теория из курса провизора: как готовят то, что лежит в котелке, и карточки для заучивания рецептов." }[shelf] + ` <a href="#/book">Книга рецептов</a>`;
+      $("#shelfhint").innerHTML = { goals: "Что можно повторить в котелке: сборы из учебника и старинные рецепты из «Наследия». Состав скрыт; если не получается, загрузите его в котелок.", herbs: "Травы справочника. Перетащите карточку в котелок или нажмите на неё.", extras: "Ингредиенты старинных рецептов, которых нет среди трав справочника: европейские травы, вино, мёд, желчь и привозное сырьё, которое закупали аптеки (корица, гвоздика, гваяковое дерево). Нажмите, чтобы положить в котелок.", methods: "Способы обработки. Первые три готовят водные извлечения по учебнику, остальные встречаются в старинных рецептах.", theory: "Теория из курса провизора: как готовят то, что лежит в котелке, и карточки для заучивания рецептов." }[shelf] + ` <a href="#/book">Книга рецептов</a>`;
       let html = "";
       if (shelf === "herbs") {
-        const list = PLANTS.filter(inCountries).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!parts.length || partsOf(p).some((k) => parts.includes(PARTS[k]))) && (!tag || tagsOf(p).includes(tag)));
+        const list = PLANTS.filter(inCountries).filter((p) => !banned(p.id) && !banned(p.potx)).filter((p) => hit([C.ml(p.ru, p.drug.ru, ...tagsOf(p)), p.lat, p.drug.lat, p.compounds]) && (!parts.length || partsOf(p).some((k) => parts.includes(PARTS[k]))) && (!tag || tagsOf(p).includes(tag)));
         html = list.map((p) => row(p.potx || p.id, p.drug.ru, p.drug.lat, tagsOf(p).slice(0, 3).map((t) => `<span class="tag" style="--tc:${C.TAG_COLORS[t] || "#555"}">${t}</span>`).join(""))).join("");
       } else if (shelf === "extras") {
         html = Object.entries(XGROUPS).map(([g, gt]) => {
-          const xs = PX.extras.filter((x) => x.group === g && !PAGE_OF[x.id] && hit([C.ml(x.ru, gt), x.lat]));
+          const xs = PX.extras.filter((x) => x.group === g && !banned(x.id) && !PAGE_OF[x.id] && hit([C.ml(x.ru, gt), x.lat]));
           return xs.length ? `<h3 class="cp-group">${gt}</h3>${xs.map((x) => row(x.id, x.ru, x.lat, x.n ? `<span class="muted" style="font-size:.8rem">в ${x.n} рец.</span>` : "")).join("")}` : "";
         }).join("");
       } else if (shelf === "goals") {
@@ -375,6 +379,7 @@
     if (C.state.countries.length) { $("#filters").hidden = false; $("#ftog").setAttribute("aria-expanded", "true"); }
     $("#tagsel").addEventListener("change", (e) => { tag = e.target.value; draw(); });
     const put = (id, i) => {
+      if (banned(id)) return;
       if (slots.includes(id)) slots[slots.indexOf(id)] = null;
       if (i == null || i < 0) i = slots.indexOf(null);
       if (i < 0) return toast("Котелок полон: уберите что-нибудь.");
@@ -473,7 +478,7 @@
   // ---------- Книга рецептов (открытая) ----------
   function allRecipes() {
     const out = {};
-    PLANTS.filter((p) => GROUP[p.prep]).forEach((p) => p.uses.filter((u) => u.ev !== "ethno").forEach((u) => {
+    PLANTS.filter((p) => GROUP[p.prep] && !banned(p.id)).forEach((p) => p.uses.filter((u) => u.ev !== "ethno").forEach((u) => {
       const k = u.c + "|" + GROUP[p.prep];
       (out[k] = out[k] || { cond: u.c, method: GROUP[p.prep], herbs: new Set() }).herbs.add(p.id);
     }));
