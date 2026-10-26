@@ -230,7 +230,7 @@
   const TAG_LESSON = { "эфирное масло": "c_essential_oils", "флавоноиды": "c_flavonoids", "кумарины": "c_coumarins", "слизи": "c_mucilages", "полисахариды": "c_mucilages", "дубильные вещества": "c_tannins", "иридоиды": "c_iridoids", "антраценпроизводные": "c_anthranoids", "горечи": "c_bitters", "сапонины": "c_saponins", "кремниевая кислота": "c_silicic_acid", "фенологликозиды": "c_phenol_glycosides", "алкалоиды": "c_alkaloids" };
   C.tagLesson = (t) => { const id = TAG_LESSON[t]; return id && CH.lessons.some((l) => l.id === id) ? id : null; };
   C.tagLink = (t, n) => {
-    const id = C.tagLesson(t), inner = `${n ? "+" + n + " " : ""}${esc(t)}`, st = `--tc:${C.TAG_COLORS[t] || "#555"}`;
+    const id = C.tagLesson(t), inner = `${n ? `<span class="tag-n">+${n}</span> ` : ""}<span>${esc(t)}</span>`, st = `--tc:${C.TAG_COLORS[t] || "#555"}`;
     return id ? `<a class="tag tag-link" style="${st}" href="#/sim/chem/${id}" title="Урок провизора: ${esc(CH.lessons.find((l) => l.id === id).title)}">${inner}</a>` : `<span class="tag" style="${st}">${inner}</span>`;
   };
   C.course = { hubHtml, bindHub, next, numOf, course, pracExtras, crossHtml, lesson, compoundCard, molGrid, compoundsFor, drawStructures, formula, lessons: CH.lessons, compounds: CH.compounds };

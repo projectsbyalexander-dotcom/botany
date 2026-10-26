@@ -143,7 +143,7 @@
   const classOfTag = (t) => (window.MECH?.classes || []).find((c) => c.tag === t);
   const tagPill = (t, n) => {
     const c = classOfTag(t);
-    const inner = `${n ? "+" + n + " " : ""}${t}`;
+    const inner = `${n ? `<span class="tag-n">+${n}</span> ` : ""}<span>${t}</span>`;
     return c ? `<a class="tag" style="--tc:${TAG_COLORS[t] || "#555"};text-decoration:none" href="#/pharm/${c.id}">${inner}</a>` : `<span class="tag" style="--tc:${TAG_COLORS[t] || "#555"}">${inner}</span>`;
   };
   const photoOf = (p, i = 0) => window.INAT?.plants?.[p.id]?.photos?.[i];

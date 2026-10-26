@@ -83,9 +83,9 @@
   const methodName = (m) => legacyMethod(m) === "water" ? "смешать как сбор (Species) и заваривать настоем или отваром" : (() => { const x = POT_METHODS.find((y) => y.id === legacyMethod(m)); return `«${x.ru}» (${x.lat}): ${x.desc}`; })();
   // Необычный ингредиент, у которого есть своя страница растения
   const PAGE_OF = Object.fromEntries(PLANTS.filter((p) => p.potx).map((p) => [p.potx, p]));
-  const extraNote = (x) => `<p class="use"><span class="badge hist">${XGROUPS[x.group] || ""}</span><b>${x.ru}</b> <i>(${x.lat})</i>${x.note?.length ? ": " + x.note.map((n) => `${esc(n.t)} ${cite(n.s)}`).join(" ") : "."}${PAGE_OF[x.id] ? ` <a href="#/plant/${PAGE_OF[x.id].id}">Страница растения</a>` : ""}</p>`;
+  const extraNote = (x) => `<p class="use"><span class="badge hist">${XGROUPS[x.group] || ""}</span><b>${x.ru}</b> <i>(${x.lat})</i>${x.note?.length ? ": " + x.note.map((n) => `<span>${esc(n.t)}</span> ${cite(n.s)}`).join(" ") : "."}${PAGE_OF[x.id] ? ` <a href="#/plant/${PAGE_OF[x.id].id}">Страница растения</a>` : ""}</p>`;
   const legacyTitle = (m) => `${esc(m.ru)}${m.lat || m.orig ? ` <i class="muted">${esc(m.lat || m.orig)}</i>` : ""}`;
-  const legacyMeta = (m) => esc([m.edition || m.period || m.date, m.region || m.where || m.place].filter(Boolean).join(", "));
+  const legacyMeta = (m) => [m.edition || m.period || m.date, m.region || m.where || m.place].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join(", ");
 
   // трава справочника: своя или «Другое» с собственной страницей растения (id котелка вроде x_icemoss)
   const herbOf = (id) => byId[id] || (PAGE_OF[id]?.uses ? PAGE_OF[id] : null);
@@ -121,9 +121,10 @@
 
     const whyHerb = (p) => {
       const u = p.uses.find((x) => x.ev !== "ethno" && cond && diseasePath(x.c).some((n) => n.id === cond));
-      if (u) return `<p class="use ${u.ev}"><span class="badge ${u.ev}">${EV[u.ev]}</span>${C.nm(p.ru, p.drug.lat, { b: true })}: ${u.t} ${cite(u.s)}</p>`;
+      if (u) return `<p class="use ${u.ev}"><span class="badge ${u.ev}">${EV[u.ev]}</span>${C.nm(p.ru, p.drug.lat, { b: true })}: <span>${u.t}</span> ${cite(u.s)}</p>`;
       const list = p.uses.filter((x) => x.ev !== "ethno");
-      return `<p class="use">${C.nm(p.ru, p.drug.lat, { b: true })}: официально применяют при состояниях «${[...new Set(list.map((x) => lc1(diseaseIndex[x.c].ru)))].join("», «")}». ${cite(list[0]?.s)}</p>`;
+      if (!list.length) return "";
+      return `<p class="use">${C.nm(p.ru, p.drug.lat, { b: true })}: официально применяют при состояниях ${[...new Set(list.map((x) => lc1(diseaseIndex[x.c].ru)))].map((x) => `«<span>${x}</span>»`).join(", ")}. ${cite(list[0]?.s)}</p>`;
     };
     const whyMethod = (p) => { const m = METHODS[p.prep]; return `<p class="use text"><b>${p.drug.ru}</b> готовят как «${m.ru}» (<i>${m.lat}</i>). ${m.why} ${cite(m.src)}</p>`; };
     const tags = {}; herbs.forEach((p) => tagsOf(p).forEach((t) => (tags[t] = (tags[t] || 0) + 1)));
@@ -135,7 +136,7 @@
       if (leg.near.length) h += `<p class="hint">${legacyMark(true)} Похожие старинные составы: ${leg.near.map((m) => `<a href="#/heritage/${m.id}">${esc(m.ru)}</a>`).join(", ")}.</p>`;
       return h;
     };
-    const cautions = herbs.flatMap((p) => p.cautions.map((c) => `<p class="caution"><b>${p.ru}:</b> ${c.t} ${cite(c.s)}</p>`)).join("");
+    const cautions = herbs.flatMap((p) => p.cautions.map((c) => `<p class="caution"><b>${p.ru}</b>: <span>${c.t}</span> ${cite(c.s)}</p>`)).join("");
     const lat = `${method.lat} ${chosen.map((id) => byId[id] ? byId[id].drug.lat : EX[id].lat).join(" + ")}`;
 
     if (leg.exact) {
@@ -147,7 +148,7 @@
     const near = blend ? "" : nearMiss(chosen);
     const noPrep = herbs.filter((p) => !METHODS[p.prep]);
     if (noPrep.length && method.water) return { kind: "goop", title: "Способ в источниках не указан", lat, cond: null,
-      body: `${near}<p>Для этого сырья в справочнике нет источника о способе приготовления водного извлечения: ${noPrep.map((p) => `<a href="#/plant/${p.id}">${esc(p.drug.ru.toLowerCase())}</a>`).join(", ")}. Поэтому котелок не может проверить обработку и обосновать средство.</p>${legacyHtml()}${cautions}` };
+      body: `${near}<p>Для этого сырья в справочнике нет источника о способе приготовления водного извлечения: ${noPrep.map((p) => `<a href="#/plant/${p.id}">${esc(lc1(p.drug.ru))}</a>`).join(", ")}. Поэтому котелок не может проверить обработку и обосновать средство.</p>${legacyHtml()}${cautions}` };
     if (wrongMethod.length) return { kind: "spoiled", title: "Неверная обработка", cond, body: `${near}<p>Это сырьё так не готовят:</p>${wrongMethod.map(whyMethod).join("")}${legacyHtml()}` };
     if (blend && (method.water || method.id === "mix")) {
       return { kind: grindBad ? "weak" : "known", title: blend.ru, lat, cond, key: "blend:" + blend.id,
@@ -155,7 +156,7 @@
     }
     if (method.old) {
       return { kind: "goop", title: `${method.ru}: рецепт неизвестен`, lat, cond: null,
-        body: `${near}<p>«${method.ru}» (<i>${method.lat}</i>) ${method.desc}. Такую форму готовили в старых аптеках, но ни один записанный рецепт из «Наследия» не совпадает с этим составом, а современные источники её не обосновывают.</p>${herbs.map(whyHerb).join("")}${extrasHtml}${mechLine}${legacyHtml()}${cautions}` };
+        body: `${near}<p>«<span>${method.ru}</span>» (<i>${method.lat}</i>) <span>${method.desc}</span>. Такую форму готовили в старых аптеках, но ни один записанный рецепт из «Наследия» не совпадает с этим составом, а современные источники её не обосновывают.</p>${herbs.map(whyHerb).join("")}${extrasHtml}${mechLine}${legacyHtml()}${cautions}` };
     }
     if (!cond) {
       const why = !herbs.length ? "В котелке нет ни одной травы справочника, поэтому обосновать смесь по монографиям EMA и учебнику нельзя." : `У этих видов сырья нет общего показания ни в монографиях EMA, ни в учебнике${sys ? `, их объединяет только система органов «${sys.ru.toLowerCase()}»` : ""}. Такую смесь трудно обосновать: каждое растение лучше применять по своему показанию.`;
@@ -259,7 +260,7 @@
     const gs = GOALS(), done = gs.filter((g) => ps.book[g.key]).length;
     const card = (g) => { const d = ps.book[g.key], meth = POT_METHODS.find((x) => x.id === g.method);
       return `<div class="card cp-goal ${d ? "done" : ""}"><h3>${g.legacy ? legacyMark(true) : ""}${g.legacy ? `<a href="#/heritage/${g.id}">${esc(g.title)}</a>` : `<a href="#/book/${g.key}">${esc(g.title)}</a>`}${d ? `<span class="done-mark">сварено</span>` : ""}</h3>
-        <p class="meta-line">${g.meta} · компонентов: ${g.ing.length} · ${esc(meth.ru)}</p>
+        <p class="meta-line"><span>${g.meta}</span> · <span>компонентов: ${g.ing.length}</span> · <span>${esc(meth.ru)}</span></p>
         <div class="cp-goal-ing herbs" hidden>${g.ing.map((id) => `<span class="chip static">${esc(ingName(id))}</span>`).join("")}</div>
         <div class="btn-row"><button class="btn small ghost" type="button" data-show>Показать состав</button><button class="btn small ghost" type="button" data-load="${g.key}">Загрузить в котелок</button></div></div>`; };
     return `<div class="cp-goal-sum"><b>Повторено ${done} из ${gs.length}</b><div class="fc-prog" aria-hidden="true"><span style="width:${Math.round((done / gs.length) * 100)}%"></span></div></div>
@@ -326,7 +327,7 @@
     const draw = () => {
       $("#slots").innerHTML = slots.map((s, i) => s
         ? `<button class="cp-slot" data-i="${i}" type="button" title="${esc(ingName(s))}: убрать" aria-label="${esc(ingName(s))}: убрать"><em class="cp-num">${i + 1}</em>${artOf(s)}<span>${esc(ingName(s))}</span></button>`
-        : `<button class="cp-slot empty" data-i="${i}" type="button" aria-label="Пустое место">${ICON("plus")}</button>`).join("")
+        : `<button class="cp-slot empty" data-i="${i}" type="button" aria-label="Пустое место"></button>`).join("")
         + `<button class="cp-slot cp-cook" id="cook" type="button">Приготовить</button>`;
       // на телефоне ячейки слишком узки для названий: список под ячейками в том же порядке
       $("#slotnames").innerHTML = slots.map((s, i) => s ? `<span><b>${i + 1}</b> ${esc(ingName(s))}</span>` : "").join("");
@@ -457,7 +458,7 @@
         $("#result").innerHTML = `<div class="card cp-res"><button class="iconbtn cp-res-x" type="button" title="Скрыть описание" aria-label="Скрыть описание">×</button>
           <p class="verdict">${{ good: "Обоснованная смесь", known: "Известный рецепт", weak: "Неполное извлечение (слабое средство)", spoiled: "Нарушена технология (испорчено)", goop: "Нет обоснования (не лекарство)", odd: "Что получилось на самом деле" }[r.kind]}</p>
           <h2 style="margin-top:.1em">${r.legacy ? legacyMark() : ""}${r.title}</h2>${r.lat ? `<div class="muted"><i>${r.lat}</i></div>` : ""}
-          ${r.cond ? `<p class="meta-line">Показание: ${diseasePath(r.cond).map((n) => n.ru).join(" / ")} ${C.icd(r.cond)}</p>` : ""}
+          ${r.cond ? `<p class="meta-line">Показание: ${diseasePath(r.cond).map((n) => `<span>${n.ru}</span>`).join(" / ")} ${C.icd(r.cond)}</p>` : ""}
           ${extra}${r.body}${learnHtml(chosen, ps.method)}</div>`;
         draw();
         // результат длиннее экрана: прокручиваем к его началу, под липкую панель котелка
@@ -535,7 +536,7 @@
     const steps = METHODS[herbs[0].prep]?.steps || [];
     app.innerHTML = `${back}<article class="card rcp"><p class="kicker">Простое средство по показанию ${ps.book[key] ? `<span class="done-mark">сварено</span>` : ""}</p>
       <h1>${m.ru}: ${lc1(diseaseIndex[r.cond].ru)}</h1>
-      <p class="meta-line">Показание: <a href="#/diseases/${r.cond}">${diseasePath(r.cond).map((n) => n.ru).join(" / ")}</a>${latName(r.cond)} ${C.icd(r.cond)}</p>
+      <p class="meta-line">Показание: <a href="#/diseases/${r.cond}">${diseasePath(r.cond).map((n) => `<span>${n.ru}</span>`).join(" / ")}</a>${latName(r.cond)} ${C.icd(r.cond)}</p>
       ${I?.def ? `<div class="prose">${C.items(I.def.slice(0, 1))}</div>` : ""}
       ${I?.red_flags ? `<div class="caution"><b>Когда нужен врач.</b> ${C.items(I.red_flags.slice(0, 2))}</div>` : ""}
       <h2>Как готовят</h2>
