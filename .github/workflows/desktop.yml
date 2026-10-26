@@ -1,0 +1,104 @@
+name: Build desktop apps
+
+# Linux, Windows and macOS builds of the same web app (Electron, folder desktop/).
+# After each successful APK build the installers are added to the same release v1.0.<build number>,
+# so the links releases/latest/download/... always point at the newest version.
+on:
+  workflow_run:
+    workflows: [Build APK]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach the installers to (empty = latest release)
+        required: false
+  pull_request:
+    paths: [desktop/**, .github/workflows/desktop.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Version
+        id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            TAG="v1.0.${{ github.event.workflow_run.run_number }}"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="$(gh release view --repo "${{ github.repository }}" --json tagName -q .tagName)"
+          else
+            TAG="v1.0.0"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build installers
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          npm ci
+          npx electron-builder --publish never -c.extraMetadata.version=${{ steps.v.outputs.version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+          if-no-files-found: error
+
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+
+  release:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - run: ls -la out
+
+      - name: Add installers to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          files: out/*
+          append_body: true
+          body: |
+
+            **Компьютер** (Windows, macOS, Linux):
+            - Windows: `Ethnobotany-windows-setup.exe`. Если появится «Windows защитила компьютер», нажмите «Подробнее» → «Выполнить в любом случае».
+            - macOS (Intel и Apple Silicon): `Ethnobotany-mac.dmg`, перетащите Ethnobotany в «Программы». При первом запуске: правый клик → «Открыть», или «Системные настройки» → «Конфиденциальность и безопасность» → «Всё равно открыть».
+            - Linux: `Ethnobotany-linux-x86_64.AppImage` (сделать исполняемым и запустить) или `ethnobotany_amd64.deb` (`sudo apt install ./ethnobotany_amd64.deb`).

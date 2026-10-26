@@ -1,0 +1,104 @@
+{
+  "name": "ethnobotany",
+  "productName": "Ethnobotany",
+  "version": "1.0.0",
+  "description": "European Ethnobotany & Pharmacognosy",
+  "author": "Ignat",
+  "homepage": "https://github.com/projectsbyalexander-dotcom/botany",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "io.github.projectsbyalexander.travnik",
+    "productName": "Ethnobotany",
+    "copyright": "Ignat",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../www",
+        "to": "www",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "artifactName": "Ethnobotany-${os}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Education",
+      "executableName": "ethnobotany",
+      "maintainer": "Ignat <noreply@github.com>",
+      "synopsis": "European ethnobotany and pharmacognosy"
+    },
+    "deb": {
+      "artifactName": "ethnobotany_${arch}.${ext}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Ethnobotany-windows-setup.${ext}",
+      "shortcutName": "Ethnobotany"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "artifactName": "Ethnobotany-mac.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "projectsbyalexander-dotcom",
+      "repo": "botany"
+    }
+  }
+}
